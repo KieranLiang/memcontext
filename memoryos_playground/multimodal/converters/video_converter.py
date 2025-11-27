@@ -210,7 +210,7 @@ class VideoConverter(MultimodalConverter):
         )
 
         self._report_progress(0.2, "执行语音识别")
-        transcripts = speech_to_text(
+        transcripts, languages = speech_to_text(
             video_name,
             videorag.working_dir,
             segment_index2name,
@@ -265,6 +265,7 @@ class VideoConverter(MultimodalConverter):
             segment_times_info,
             transcripts,
             captions,
+            languages,
         )
         manager.shutdown()
 

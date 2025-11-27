@@ -86,3 +86,5 @@ VideoRAG/
  --deepseek-key sk-*** \
  --siliconflow-key sk-***
 ```
+> 当前智能将视频transcript为英文，不支持中文
+> https://huggingface.co/Systran/faster-distil-whisper-large-v3/discussions/1 中提到：At the present time, this model only recognizes the English language and does not yet support other languages. But you can look for other fine tune distil models for Chinese.

@@ -231,3 +231,32 @@ META_INFO_USER_PROMPT = ("""Update the conversation meta-summary by incorporatin
     {new_dialogue}
 
     Updated Meta-summary:""") 
+
+# Prompt for video structured caption generation (from videorag/_videoutil/caption.py)
+VIDEO_STRUCTURED_CAPTION_PROMPT = """You are an expert video analyst tasked with summarizing a short video clip.
+请结合提供的帧画面与实时字幕，输出一个 JSON 对象，字段含义如下：
+{{
+  "chunk_summary": "中文描述，200-300字，详细描述视频内容，包括：场景背景、主要人物及其行为、重要物体、动作细节、情绪氛围、镜头运动等。要全面、详细、生动。",
+  "scene_label": "2-4个英文小写词，用下划线连接，概括场景，如 beach_feeding_gulls",
+  "objects_detected": ["按重要性列出关键物体，使用英文单词或短语"],
+  "actions": "关键动作的描述，必须是字符串格式（不是数组），必须使用英文短语，要具体、有意义，描述人物或物体的主要行为。例如：'wielding a knife threateningly, shouting in panic, questioning repeatedly, walking away decisively'。避免使用无意义的通用词汇。多个动作用逗号分隔。",
+  "emotions": "人物情绪或场景氛围，使用中文或英文，如 '科学探索和发现的氛围'",
+  "confidence": 0.0-1.0 之间的小数，表示你对描述准确性的信心",
+  "notes": "可选补充信息，如镜头运动/光线/突发事件，使用中文或英文"
+}}
+
+重要说明：
+- chunk_summary 必须用中文输出，200-300字，要详细、全面，涵盖场景、人物、动作、情绪等各个方面
+- language 字段请不要填写，系统会自动从字幕中检测视频的实际语言
+- actions 字段必须是字符串格式（不是数组），使用英文短语，要具体、有意义，描述实际发生的具体动作，避免泛泛而谈。多个动作用逗号分隔，例如：'wielding a knife threateningly, shouting in panic, questioning repeatedly'
+- objects_detected 必须是数组格式，使用英文单词或短语，列出视频中的关键物体
+- 仔细观看每一帧画面，结合字幕内容，提供详细、准确的描述
+- 其他字段请根据实际内容填写，尽量使用英文以保证一致性
+
+务必只输出 JSON，不要多余文本或解释。
+当前片段起止时间: {start:.2f}s - {end:.2f}s。
+若字幕为空，请在 chunk_summary 中注明"无对白"并专注于视觉细节。
+
+字幕内容:
+{transcript}
+"""

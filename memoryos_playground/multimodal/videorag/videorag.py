@@ -68,7 +68,7 @@ class VideoRAG:
     # video
     threads_for_split: int = 10
     video_segment_length: int = 30 # seconds
-    rough_num_frames_per_segment: int = 5 # frames
+    rough_num_frames_per_segment: int = 12 # frames (increased for better video understanding)
     fine_num_frames_per_segment: int = 15 # frames
     video_output_format: str = "mp4"
     audio_output_format: str = "mp3"
@@ -223,8 +223,8 @@ class VideoRAG:
                 self.audio_output_format,
             )
             
-            # Step2: obtain transcript with whisper
-            transcripts = speech_to_text(
+            # Step2: obtain transcript with whisper (also returns language info)
+            transcripts, languages = speech_to_text(
                 video_name, 
                 self.working_dir, 
                 segment_index2name,
@@ -274,12 +274,13 @@ class VideoRAG:
                     log_file.write(f"Video Name:{video_name} Error processing:\n{error_message}\n\n")
                 raise RuntimeError(error_message)
             
-            # Step4: insert video segments information
+            # Step4: insert video segments information (with language info from ASR)
             segments_information = merge_segment_information(
                 segment_index2name,
                 segment_times_info,
                 transcripts,
                 captions,
+                languages,
             )
             manager.shutdown()
             loop.run_until_complete(self.video_segments.upsert(

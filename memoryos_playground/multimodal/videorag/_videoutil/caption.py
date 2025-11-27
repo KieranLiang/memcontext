@@ -8,6 +8,17 @@ from tqdm import tqdm
 from transformers import AutoModel, AutoTokenizer
 from moviepy.video.io.VideoFileClip import VideoFileClip
 
+# Import prompt from centralized prompts file
+try:
+    from memoryos_playground.prompts import VIDEO_STRUCTURED_CAPTION_PROMPT
+    STRUCTURED_PROMPT_TEMPLATE = VIDEO_STRUCTURED_CAPTION_PROMPT
+except ImportError:
+    # Fallback if import fails
+    STRUCTURED_PROMPT_TEMPLATE = """You are an expert video analyst tasked with summarizing a short clip.
+请结合提供的帧画面与实时字幕，输出一个 JSON 对象。
+重要：language 字段请不要填写，系统会自动检测视频的实际语言。
+"""
+
 def encode_video(video, frame_times):
     frames = []
     for t in frame_times:
@@ -15,26 +26,6 @@ def encode_video(video, frame_times):
     frames = np.stack(frames, axis=0)
     frames = [Image.fromarray(v.astype('uint8')).resize((1280, 720)) for v in frames]
     return frames
-    
-STRUCTURED_PROMPT_TEMPLATE = """You are an expert Chinese video analyst tasked with summarizing a short clip.
-请结合提供的帧画面与实时字幕，输出一个 JSON，字段含义如下：
-{{
-  "chunk_summary": "中文描述，70-150字，强调人物/场景/动作",
-  "scene_label": "2-4个英文小写词，概括场景，如 beach_feeding_gulls",
-  "objects_detected": ["按重要性列出关键物体，单词或短语，使用英文"],
-  "actions": ["关键动作动词或短语，英文"],
-  "emotions": ["可选，人物情绪或氛围，英文"],
-  "language": "字幕语言，两位或缩写，如 zh、en、mixed",
-  "confidence": 0-1 之间的小数，表示你对描述准确性的信心",
-  "notes": "可选补充信息，如镜头运动/光线/突发事件"
-}}
-
-务必只输出 JSON，不要多余文本或解释。
-当前片段起止时间: {start:.2f}s - {end:.2f}s。
-若字幕为空，请在 chunk_summary 中注明“无对白”并专注于视觉细节。
-字幕内容:
-{transcript}
-"""
 
 
 def _extract_json_from_response(raw_text: str) -> tuple[str, dict]:
@@ -60,16 +51,46 @@ def _extract_json_from_response(raw_text: str) -> tuple[str, dict]:
     return clean_text, metadata
 
 
+def _normalize_actions_field(actions_value) -> str:
+    """
+    标准化 actions 字段为字符串格式。
+    如果收到数组，转换为逗号分隔的字符串。
+    """
+    if actions_value is None:
+        return ""
+    
+    if isinstance(actions_value, list):
+        # 如果是数组，转换为逗号分隔的字符串
+        return ", ".join(str(item).strip() for item in actions_value if item)
+    
+    if isinstance(actions_value, str):
+        return actions_value.strip()
+    
+    return str(actions_value).strip()
+
+
 def _ensure_metadata_defaults(metadata: dict, fallback_summary: str) -> dict:
+    """
+    确保 metadata 有必需的字段，但不设置 language（会在 merge_segment_information 中从 ASR 获取）。
+    """
     metadata = metadata or {}
     metadata.setdefault("chunk_summary", fallback_summary)
     metadata.setdefault("scene_label", "unknown_scene")
     metadata.setdefault("objects_detected", [])
-    metadata.setdefault("actions", [])
-    metadata.setdefault("emotions", [])
-    metadata.setdefault("language", "zh")
+    
+    # 标准化 actions 字段为字符串格式
+    if "actions" in metadata:
+        metadata["actions"] = _normalize_actions_field(metadata["actions"])
+    else:
+        metadata.setdefault("actions", "")
+    
+    metadata.setdefault("emotions", "")
+    # language 不在这里设置，会在 merge_segment_information 中从 Whisper ASR 结果获取
     metadata.setdefault("confidence", 0.75)
     metadata.setdefault("notes", "")
+    # 移除 model 可能错误输出的 language 字段
+    if "language" in metadata:
+        del metadata["language"]
     return metadata
 
 
@@ -111,14 +132,14 @@ def segment_caption(video_name, video_path, segment_index2name, transcripts, seg
         error_queue.put(f"Error in segment_caption:\n {str(e)}")
         raise RuntimeError
 
-def merge_segment_information(segment_index2name, segment_times_info, transcripts, captions):
+def merge_segment_information(segment_index2name, segment_times_info, transcripts, captions, languages):
     inserting_segments = {}
     segment_total = len(segment_index2name)
     for index in segment_index2name:
         caption_entry = captions[index]
         if isinstance(caption_entry, dict):
             caption_text = caption_entry.get("raw", "")
-            caption_metadata = caption_entry.get("metadata", {})
+            caption_metadata = caption_entry.get("metadata", {}).copy()
         else:
             caption_text = str(caption_entry)
             caption_metadata = {}
@@ -126,14 +147,29 @@ def merge_segment_information(segment_index2name, segment_times_info, transcript
         transcript_text = transcripts[index]
         start_time, end_time = segment_times_info[index]["timestamp"]
         duration_seconds = float(max(end_time - start_time, 0.0))
-        time_range = f"{start_time:.2f}-{end_time:.2f}"
+        # Format time range as MM:SS-MM:SS
+        start_min, start_sec = int(start_time // 60), int(start_time % 60)
+        end_min, end_sec = int(end_time // 60), int(end_time % 60)
+        time_range = f"{start_min:02d}:{start_sec:02d}-{end_min:02d}:{end_sec:02d}"
 
+        # 使用从 Whisper ASR 检测到的语言
+        detected_language = languages.get(index, "unknown")
+        
+        # 设置必需的 metadata 字段
         caption_metadata.setdefault("chunk_summary", caption_text)
         caption_metadata.setdefault("scene_label", "unknown_scene")
-        caption_metadata.setdefault("objects_detected", [])
-        caption_metadata.setdefault("language", "zh")
+        if "objects_detected" not in caption_metadata:
+            caption_metadata["objects_detected"] = []
+        # 标准化 actions 字段为字符串格式
+        caption_metadata["actions"] = _normalize_actions_field(caption_metadata.get("actions", ""))
+        if "emotions" not in caption_metadata:
+            caption_metadata["emotions"] = ""
         caption_metadata.setdefault("confidence", 0.75)
         caption_metadata.setdefault("notes", "")
+        
+        # 强制使用从 ASR 检测到的语言，覆盖 model 可能错误输出的值
+        caption_metadata["language"] = detected_language
+        
         caption_metadata["source_type"] = "video"
         caption_metadata["chunk_index"] = int(index)
         caption_metadata["chunk_count_estimate"] = segment_total
