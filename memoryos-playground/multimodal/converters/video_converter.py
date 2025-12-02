@@ -7,6 +7,8 @@ import subprocess
 import sys
 import tempfile
 import shutil
+import uuid
+import requests
 from datetime import datetime
 from pathlib import Path
 from typing import Any, List, Optional, Tuple
@@ -109,11 +111,21 @@ class VideoConverter(MultimodalConverter):
             base_url=self.base_url,
             api_key=self.api_key,
         )
-
-    def _get_file_size_mb(self, file_path: str) -> float:
-        """获取文件大小（MB）"""
-        size_bytes = os.path.getsize(file_path)
-        return size_bytes / (1024 * 1024)
+        
+        # 音频转录配置（可选）
+        self.enable_audio_transcription = os.environ.get("ENABLE_AUDIO_TRANSCRIPTION", "false").lower() == "true"
+        # SiliconFlow API配置（用于音频转录）
+        # 从环境变量读取，如果没有设置则使用默认值
+        self.siliconflow_api_key = os.environ.get("SILICONFLOW_API_KEY") or "sk-kivxtwjdmyxnzgerjgzccjkdxpfgcpegrpiflhsbkwlpyqhx"
+        self.siliconflow_api_url = os.environ.get("SILICONFLOW_API_URL", "https://api.siliconflow.cn/v1/audio/transcriptions")
+        self.siliconflow_model = os.environ.get("SILICONFLOW_MODEL", "TeleAI/TeleSpeechASR")
+        
+        # 输出音频转录配置状态
+        if self.enable_audio_transcription:
+            if not self.siliconflow_api_key:
+                self._report_progress(0.0, "⚠️  警告: 音频转录功能已启用，但 SILICONFLOW_API_KEY 未配置")
+        else:
+            self._report_progress(0.0, "音频转录功能未启用（设置 ENABLE_AUDIO_TRANSCRIPTION=true 启用）")
 
     def _split_video_by_time(self, video_path: str, segment_duration: int = 60) -> List[Tuple[str, float, float]]:
         """
@@ -248,6 +260,270 @@ class VideoConverter(MultimodalConverter):
         except Exception:
             pass
         return None
+    
+    def _get_audio_duration(self, audio_path: str) -> Optional[float]:
+        """获取音频时长（秒）"""
+        if not shutil.which("ffprobe"):
+            return None
+        
+        try:
+            cmd = ["ffprobe", "-v", "error", "-show_entries", "format=duration", 
+                   "-of", "default=noprint_wrappers=1:nokey=1", audio_path]
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                return float(result.stdout.strip())
+            return None
+        except Exception:
+            return None
+    
+    def _extract_audio_from_video(self, video_path: str, audio_output_path: str, start_time: float = None, duration: float = None) -> bool:
+        """从视频文件提取音频"""
+        if not shutil.which("ffmpeg"):
+            return False
+        
+        try:
+            # 从视频提取音频，使用copy模式（不重新编码，速度快）
+            cmd = ["ffmpeg", "-i", video_path, "-vn", "-acodec", "copy", "-y"]
+            
+            # 如果指定了时间范围，添加相应参数
+            if start_time is not None:
+                cmd.extend(["-ss", str(start_time)])
+            if duration is not None:
+                cmd.extend(["-t", str(duration)])
+            
+            cmd.append(audio_output_path)
+            
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True
+            )
+            
+            # 如果copy模式失败（可能视频没有音频流或格式不支持），尝试重新编码
+            if result.returncode != 0 or not os.path.exists(audio_output_path) or os.path.getsize(audio_output_path) == 0:
+                cmd = ["ffmpeg", "-i", video_path, "-vn", "-acodec", "libmp3lame", "-b:a", "128k", "-y"]
+                
+                if start_time is not None:
+                    cmd.extend(["-ss", str(start_time)])
+                if duration is not None:
+                    cmd.extend(["-t", str(duration)])
+                
+                cmd.append(audio_output_path)
+                
+                result = subprocess.run(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+            
+            if result.returncode == 0 and os.path.exists(audio_output_path) and os.path.getsize(audio_output_path) > 0:
+                return True
+            else:
+                # 检查是否是视频没有音频流
+                stderr_lower = result.stderr.lower()
+                if "no audio stream" in stderr_lower or "does not contain any stream" in stderr_lower:
+                    return False
+                return False
+        except Exception:
+            return False
+    
+    def _split_audio_by_time(self, audio_path: str, segment_duration: int = 60, output_dir: str = None) -> List[Tuple[str, float, float]]:
+        """
+        将音频文件按时间切分成多个片段
+        
+        Args:
+            audio_path: 音频文件路径
+            segment_duration: 每个片段的时长（秒），默认60秒
+            output_dir: 输出目录，如果为None则使用临时目录
+        
+        Returns:
+            list: [(片段路径, 开始时间, 结束时间), ...]
+        """
+        if not shutil.which("ffmpeg"):
+            raise RuntimeError("ffmpeg 未安装或不在 PATH 中")
+        
+        if output_dir is None:
+            output_dir = tempfile.mkdtemp(prefix="audio_segments_")
+        else:
+            os.makedirs(output_dir, exist_ok=True)
+        
+        # 获取音频总时长
+        total_duration = self._get_audio_duration(audio_path)
+        if total_duration is None:
+            raise ValueError("无法获取音频时长")
+        
+        segments = []
+        audio_name = Path(audio_path).stem
+        audio_ext = Path(audio_path).suffix
+        
+        segment_index = 0
+        start_time = 0.0
+        
+        while start_time < total_duration:
+            end_time = min(start_time + segment_duration, total_duration)
+            segment_path = os.path.join(output_dir, f"{audio_name}_segment_{segment_index:04d}{audio_ext}")
+            
+            # 使用ffmpeg切分音频
+            cmd = [
+                "ffmpeg",
+                "-i", audio_path,
+                "-ss", str(start_time),
+                "-t", str(end_time - start_time),
+                "-acodec", "copy",  # 使用copy模式，不重新编码
+                "-y",
+                segment_path
+            ]
+            
+            result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+            
+            if result.returncode == 0 and os.path.exists(segment_path) and os.path.getsize(segment_path) > 0:
+                segments.append((segment_path, start_time, end_time))
+                segment_index += 1
+            else:
+                # 如果copy模式失败，尝试重新编码
+                cmd = [
+                    "ffmpeg",
+                    "-i", audio_path,
+                    "-ss", str(start_time),
+                    "-t", str(end_time - start_time),
+                    "-acodec", "libmp3lame" if audio_ext == ".mp3" else "aac",
+                    "-b:a", "128k",
+                    "-y",
+                    segment_path
+                ]
+                result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                
+                if result.returncode == 0 and os.path.exists(segment_path) and os.path.getsize(segment_path) > 0:
+                    segments.append((segment_path, start_time, end_time))
+                    segment_index += 1
+            
+            start_time = end_time
+        
+        return segments
+    
+    def _transcribe_audio_segment_with_siliconflow(self, segment_path: str, segment_start: float) -> Optional[str]:
+        """使用SiliconFlow API转录单个音频片段，返回转录文本"""
+        if not self.siliconflow_api_key:
+            return None
+        
+        file_ext = os.path.splitext(segment_path)[1].lower()
+        
+        try:
+            with open(segment_path, 'rb') as audio_file:
+                files = { 
+                    "file": (os.path.basename(segment_path), audio_file, f"audio/{file_ext[1:] if file_ext else 'mp3'}")
+                }
+                payload = { 
+                    "model": self.siliconflow_model
+                }
+                headers = {
+                    "Authorization": f"Bearer {self.siliconflow_api_key}"
+                }
+                
+                response = requests.post(self.siliconflow_api_url, data=payload, files=files, headers=headers, timeout=60)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    return result.get("text", "")
+                else:
+                    # 输出详细的错误信息
+                    error_msg = f"⚠️  SiliconFlow API调用失败: {response.status_code}"
+                    try:
+                        error_detail = response.json()
+                        if isinstance(error_detail, dict):
+                            error_msg += f" - {error_detail.get('message', error_detail.get('error', str(error_detail)))}"
+                        else:
+                            error_msg += f" - {str(error_detail)}"
+                    except:
+                        error_msg += f" - {response.text[:200]}"
+                    
+                    # 如果是401错误，提示检查API key
+                    if response.status_code == 401:
+                        error_msg += " (认证失败，请检查 SILICONFLOW_API_KEY 是否正确)"
+                    
+                    self._report_progress(0.0, error_msg)
+                    return None
+        except Exception as e:
+            self._report_progress(0.0, f"⚠️  音频转录出错: {str(e)[:100]}")
+            return None
+    
+    def _transcribe_audio_segments_list(self, audio_path: str, segment_start_time: float = 0.0) -> List[str]:
+        """
+        将音频文件按1分钟切分并转录，返回文本列表
+        
+        Args:
+            audio_path: 音频文件路径
+            segment_start_time: 音频在整个视频中的开始时间偏移
+        
+        Returns:
+            List[str]: 每个片段的转录文本列表
+        """
+        if not self.enable_audio_transcription:
+            return []
+        
+        if not self.siliconflow_api_key:
+            return []
+        
+        try:
+            # 切分音频（每60秒一个片段）
+            segments = self._split_audio_by_time(audio_path, segment_duration=60)
+            
+            transcription_list = []
+            
+            for i, (segment_path, seg_start, seg_end) in enumerate(segments):
+                # 调整时间偏移（加上音频在整个视频中的开始时间）
+                adjusted_start = seg_start + segment_start_time
+                adjusted_end = seg_end + segment_start_time
+                
+                self._report_progress(
+                    0.0,
+                    f"正在转录音频片段 {i+1}/{len(segments)} [{adjusted_start:.1f}s - {adjusted_end:.1f}s]..."
+                )
+                
+                # 转录片段
+                text = self._transcribe_audio_segment_with_siliconflow(segment_path, adjusted_start)
+                
+                if text:
+                    transcription_list.append(text)
+                    self._report_progress(0.0, f"✅ 音频片段 {i+1} 转录成功: {len(text)} 字符")
+                else:
+                    transcription_list.append("")  # 失败时添加空字符串
+                    self._report_progress(0.0, f"⚠️  音频片段 {i+1} 转录失败")
+                
+                # 清理临时片段文件
+                try:
+                    os.remove(segment_path)
+                except Exception:
+                    pass
+            
+            # 清理临时目录
+            temp_dir = os.path.dirname(segments[0][0]) if segments else None
+            if temp_dir and os.path.exists(temp_dir) and temp_dir.startswith(tempfile.gettempdir()):
+                try:
+                    shutil.rmtree(temp_dir, ignore_errors=True)
+                except Exception:
+                    pass
+            
+            return transcription_list
+            
+        except Exception as e:
+            self._report_progress(0.0, f"⚠️  音频转录过程出错: {str(e)[:100]}")
+            return []
+    
+    def _merge_video_and_audio_analysis(self, video_description: str, audio_transcription: Optional[str]) -> str:
+        """合并视频分析和音频转录结果"""
+        if not audio_transcription:
+            return video_description
+        
+        merged = f"""【视频分析】
+{video_description}
+
+【音频转录】
+{audio_transcription}"""
+        return merged
 
     def _filter_timestamps_by_duration(self, text: str, max_duration: Optional[float] = None) -> str:
         """
@@ -436,7 +712,6 @@ class VideoConverter(MultimodalConverter):
             # 获取视频信息
             self._report_progress(0.05, "获取视频信息...")
             video_duration = self._get_video_duration(video_path)
-            file_size_mb = self._get_file_size_mb(video_path)
             
             # 不论视频大小，都按1分钟（60秒）切分
             chunks = []
@@ -444,16 +719,46 @@ class VideoConverter(MultimodalConverter):
             segments = self._split_video_by_time(video_path, segment_duration=60)
             self._report_progress(0.2, f"视频已切分成 {len(segments)} 个片段")
             
+            # 提取整个视频的音频（如果启用音频转录）
+            audio_transcription_list = []
+            if self.enable_audio_transcription and self.siliconflow_api_key:
+                try:
+                    self._report_progress(0.15, "正在提取视频音频...")
+                    temp_audio_path = os.path.join(tempfile.gettempdir(), f"video_audio_{uuid.uuid4().hex[:8]}.mp3")
+                    
+                    if self._extract_audio_from_video(video_path, temp_audio_path):
+                        audio_size = os.path.getsize(temp_audio_path) if os.path.exists(temp_audio_path) else 0
+                        self._report_progress(0.16, f"✅ 音频提取成功: {audio_size / 1024:.2f}KB")
+                        
+                        # 对音频进行1分钟切片并转录
+                        self._report_progress(0.17, "正在对音频进行1分钟切片并转录...")
+                        audio_transcription_list = self._transcribe_audio_segments_list(temp_audio_path, segment_start_time=0.0)
+                        
+                        if audio_transcription_list:
+                            self._report_progress(0.18, f"✅ 音频转录完成: {len(audio_transcription_list)} 个片段")
+                        else:
+                            self._report_progress(0.18, "⚠️  音频转录失败或无结果")
+                        
+                        # 清理临时音频文件
+                        if os.path.exists(temp_audio_path):
+                            try:
+                                os.remove(temp_audio_path)
+                            except Exception:
+                                pass
+                    else:
+                        self._report_progress(0.16, "⚠️  音频提取失败（可能视频没有音频流）")
+                except Exception as e:
+                    self._report_progress(0.16, f"⚠️  音频处理过程出错: {str(e)[:100]}")
+            
             # 分析每个片段，每个片段生成一个独立的 chunk
             for i, (segment_path, start_time, end_time) in enumerate(segments):
                 segment_duration = end_time - start_time
-                segment_size_mb = self._get_file_size_mb(segment_path)
                 progress_start = 0.2 + (i / len(segments)) * 0.7
                 progress_end = 0.2 + ((i + 1) / len(segments)) * 0.7
                 
                 self._report_progress(
                     progress_start,
-                    f"正在分析片段 {i+1}/{len(segments)} ({start_time:.1f}s - {end_time:.1f}s, {segment_size_mb:.2f}MB)..."
+                    f"正在分析片段 {i+1}/{len(segments)} ({start_time:.1f}s - {end_time:.1f}s)..."
                 )
                 
                 # 分析片段
@@ -466,6 +771,15 @@ class VideoConverter(MultimodalConverter):
                 # 调整时间戳，加上片段开始时间偏移
                 if start_time > 0:
                     segment_description = self._adjust_timestamps(segment_description, start_time)
+                
+                # 获取对应的音频转录文本（如果启用）
+                audio_text = ""
+                if audio_transcription_list and i < len(audio_transcription_list):
+                    audio_text = audio_transcription_list[i]
+                
+                # 合并视频分析和音频转录结果
+                if audio_text:
+                    segment_description = self._merge_video_and_audio_analysis(segment_description, audio_text)
                 
                 # 为每个片段创建独立的 chunk
                 start_minutes = int(start_time // 60)
@@ -485,9 +799,11 @@ class VideoConverter(MultimodalConverter):
                     "chunk_summary": segment_description[:100] + "..." if len(segment_description) > 100 else segment_description,
                     "transcription_model": self.model,
                     "notes": segment_description,
-                    "segment_size_mb": round(segment_size_mb, 2),
                     "segment_start_time": round(start_time, 2),
                     "segment_end_time": round(end_time, 2),
+                    "has_audio": bool(audio_text),
+                    "audio_transcription": audio_text if audio_text else None,
+                    "audio_transcription_list": audio_transcription_list if i == 0 else None,  # 只在第一个chunk保存完整列表
                 }
                 
                 chunk = ConversionChunk(
@@ -509,7 +825,6 @@ class VideoConverter(MultimodalConverter):
                     "converter_version": "1.0.0",
                     "conversion_time": datetime.utcnow().isoformat() + "Z",
                     "video_duration": video_duration,
-                    "file_size_mb": file_size_mb,
                     "segments_count": len(segments) if segments else 0,
                     "chunks_count": len(chunks),
                     "model": self.model,
