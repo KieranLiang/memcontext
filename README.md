@@ -1,4 +1,4 @@
-# 🧠 MemContext: The Next-Gen Multi-modal Agent Memory Architecture
+# 🧠 MemContext: The Next Generation Multimodal Agent Memory Architecture
 
 <div align="center">
 
@@ -11,7 +11,7 @@
 
 *Store Everything · Search Everything · Frame-Level Precision*
 
-[中文文档](README_CN.md) • [Core Features](#-core-features) • [Architecture](#-architecture) • [Use Cases](#-use-cases)
+[中文文档](README_zh.md) • [Core Features](#-core-features) • [Architecture](#-architecture) • [Use Cases](#-use-cases)
 
 </div>
 
