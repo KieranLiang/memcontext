@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """
-Simple MemoryOS MCP Server Test
+Simple Memcontext MCP Server Test
 - Insert 15 conversations
 - Set short-term memory capacity to 2
 - Test 2 specific queries to verify memory retrieval works correctly.
 """
-
+import os
 import asyncio
 import json
 import sys
@@ -21,12 +21,23 @@ except ImportError as e:
     print("Please install official MCP SDK: pip install mcp")
     sys.exit(1)
 
-class SimpleMemoryOSTest:
-    """Simple MemoryOS MCP Server Test"""
+class SimpleMemcontextTest:
+    """Simple Memcontext MCP Server Test"""
     
     def __init__(self, server_script: str = "server_new.py", config_file: str = "config.json"):
+        base_dir = Path(__file__).parent
         self.server_script = Path(server_script)
         self.config_file = Path(config_file)
+        
+        # 若相对路径未找到，回退到脚本所在目录
+        if not self.server_script.exists():
+            candidate = base_dir / server_script
+            if candidate.exists():
+                self.server_script = candidate
+        if not self.config_file.exists():
+            candidate = base_dir / config_file
+            if candidate.exists():
+                self.config_file = candidate
         
         # Validate file existence
         if not self.server_script.exists():
@@ -43,7 +54,7 @@ class SimpleMemoryOSTest:
         )
     
     async def test_insert_conversations(self):
-        """Insert 15 conversations into MemoryOS"""
+        """Insert 15 conversations into Memcontext"""
         print("\n💾 Step 1: Insert 15 Conversations")
         
         # 15 test conversations
@@ -206,7 +217,7 @@ class SimpleMemoryOSTest:
     
     async def run_test(self):
         """Run the complete test"""
-        print("🚀 Starting Simple MemoryOS MCP Server Test")
+        print("🚀 Starting Simple Memcontext MCP Server Test")
         print(f"Server script: {self.server_script}")
         print(f"Config file: {self.config_file}")
         print("=" * 60)
@@ -231,7 +242,7 @@ class SimpleMemoryOSTest:
         print(f"✅ Memory retrieval: {'Passed' if retrieval_success else 'Failed'}")
         
         if insert_success and retrieval_success:
-            print("🎉 All tests passed! MemoryOS is working correctly.")
+            print("🎉 All tests passed! Memcontext is working correctly.")
             print("🔍 Key findings:")
             print("   - Short-term memory capacity limit working (should be 2)")
             print("   - Mid-term memory storage and retrieval working")
@@ -245,14 +256,14 @@ def main():
     """Main function"""
     import argparse
     
-    parser = argparse.ArgumentParser(description="Simple MemoryOS MCP Server Test")
+    parser = argparse.ArgumentParser(description="Simple Memcontext MCP Server Test")
     parser.add_argument("--server", default="server_new.py", help="Server script path")
     parser.add_argument("--config", default="config.json", help="Config file path")
     
     args = parser.parse_args()
     
     try:
-        tester = SimpleMemoryOSTest(args.server, args.config)
+        tester = SimpleMemcontextTest(args.server, args.config)
         success = asyncio.run(tester.run_test())
         sys.exit(0 if success else 1)
     except KeyboardInterrupt:

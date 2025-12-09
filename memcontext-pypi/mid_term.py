@@ -92,7 +92,7 @@ class MidTermMemory:
             if next_page_id and not self.get_page_by_id(next_page_id):
                  pass
             # More robustly, one might need to search all other sessions if inter-session linking was allowed
-            # For now, assuming internal consistency or that MemoryOS class manages higher-level links
+            # For now, assuming internal consistency or that Memcontext class manages higher-level links
 
         self.rebuild_heap()
         self.save()

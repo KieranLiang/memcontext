@@ -1,12 +1,12 @@
-# Memcontext Core Dependencies    
+# Memcontext Core Dependencies
 # Core scientific computing and ML libraries
 numpy==1.24.*
 sentence-transformers>=2.7.0,<3.0.0 # Updated for Qwen model support
 transformers>=4.51.0              # Required for newer sentence-transformer features
 FlagEmbedding>=1.2.9                # For BGE-M3 model support
 
-faiss-cpu
-
+faiss-gpu>=1.7.0,<2.0.0
+httpx[socks]
 openai
 # Web framework (for demo)
 flask>=2.0.0,<3.0.0

@@ -4,8 +4,21 @@ import os
 import json
 import argparse
 from typing import Any, Dict, Optional, List
-# 确保当前目录在sys.path中，以便导入memoryos模块
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'memoryos'))
+# 确保当前目录在sys.path中，以便导入memcontext模块
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'memcontext'))
+
+# 兼容部分 accelerate 版本缺少 clear_device_cache 的情况
+try:
+    from accelerate.utils import memory as _acc_mem  # type: ignore
+    if not hasattr(_acc_mem, "clear_device_cache"):
+        import torch
+        def _clear_device_cache():
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
+        _acc_mem.clear_device_cache = _clear_device_cache  # type: ignore
+except Exception:
+    # 若 accelerate 未安装或其他异常，保持静默，不影响后续导入
+    pass
 
 try:
     from mcp.server.fastmcp import FastMCP
@@ -15,18 +28,18 @@ except ImportError as e:
     sys.exit(1)
 
 try:
-    from memoryos import Memoryos
+    from memcontext import Memcontext
     from utils import get_timestamp
 except ImportError as e:
-    print(f"无法导入MemoryOS模块: {e}", file=sys.stderr)
-    print("请确保项目结构正确，memoryos目录应包含所有必要文件", file=sys.stderr)
+    print(f"无法导入Memcontext模块: {e}", file=sys.stderr)
+    print("请确保项目结构正确，memcontext目录应包含所有必要文件", file=sys.stderr)
     sys.exit(1)
 
-# MemoryOS实例 - 将在初始化时设置
-memoryos_instance: Optional[Memoryos] = None
+# Memcontext实例 - 将在初始化时设置
+memcontext_instance: Optional[Memcontext] = None
 
-def init_memoryos(config_path: str) -> Memoryos:
-    """初始化MemoryOS实例"""
+def init_memcontext(config_path: str) -> Memcontext:
+    """初始化Memcontext实例"""
     if not os.path.exists(config_path):
         raise FileNotFoundError(f"配置文件不存在: {config_path}")
     
@@ -38,7 +51,7 @@ def init_memoryos(config_path: str) -> Memoryos:
         if field not in config:
             raise ValueError(f"配置文件缺少必需字段: {field}")
     
-    return Memoryos(
+    return Memcontext(
         user_id=config['user_id'],
         openai_api_key=config['openai_api_key'],
         data_storage_path=config['data_storage_path'],
@@ -54,12 +67,12 @@ def init_memoryos(config_path: str) -> Memoryos:
     )
 
 # 创建FastMCP服务器实例
-mcp = FastMCP("MemoryOS")
+mcp = FastMCP("Memcontext")
 
 @mcp.tool()
 def add_memory(user_input: str, agent_response: str, timestamp: Optional[str] = None, meta_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
-    向MemoryOS系统添加新的记忆（用户输入和助手回应的对话对）
+    向Memcontext系统添加新的记忆（用户输入和助手回应的对话对）
     
     Args:
         user_input: 用户的输入或问题
@@ -70,12 +83,12 @@ def add_memory(user_input: str, agent_response: str, timestamp: Optional[str] = 
     Returns:
         包含操作结果的字典
     """
-    global memoryos_instance
+    global memcontext_instance
     
-    if memoryos_instance is None:
+    if memcontext_instance is None:
         return {
             "status": "error",
-            "message": "MemoryOS is not initialized. Please check the configuration file."
+            "message": "Memcontext is not initialized. Please check the configuration file."
         }
     
     try:
@@ -85,7 +98,7 @@ def add_memory(user_input: str, agent_response: str, timestamp: Optional[str] = 
                 "message": "user_input and agent_response are required"
             }
         
-        memoryos_instance.add_memory(
+        memcontext_instance.add_memory(
             user_input=user_input,
             agent_response=agent_response,
             timestamp=timestamp or get_timestamp(),
@@ -94,7 +107,7 @@ def add_memory(user_input: str, agent_response: str, timestamp: Optional[str] = 
         
         result = {
             "status": "success",
-            "message": "Memory has been successfully added to MemoryOS",
+            "message": "Memory has been successfully added to Memcontext",
             "timestamp": timestamp or get_timestamp(),
             "details": {
                 "user_input_length": len(user_input),
@@ -114,7 +127,7 @@ def add_memory(user_input: str, agent_response: str, timestamp: Optional[str] = 
 @mcp.tool()
 def retrieve_memory(query: str, relationship_with_user: str = "friend", style_hint: str = "", max_results: int = 10) -> Dict[str, Any]:
     """
-    根据查询从MemoryOS检索相关的记忆和上下文信息，包括短期记忆、中期记忆和长期知识
+    根据查询从Memcontext检索相关的记忆和上下文信息，包括短期记忆、中期记忆和长期知识
     
     Args:
         query: 检索查询，描述要寻找的信息
@@ -129,12 +142,12 @@ def retrieve_memory(query: str, relationship_with_user: str = "friend", style_hi
         - retrieved_user_knowledge: 从用户长期知识库检索的相关条目
         - retrieved_assistant_knowledge: 从助手知识库检索的相关条目
     """
-    global memoryos_instance
+    global memcontext_instance
     
-    if memoryos_instance is None:
+    if memcontext_instance is None:
         return {
             "status": "error",
-            "message": "MemoryOS is not initialized. Please check the configuration file."
+            "message": "Memcontext is not initialized. Please check the configuration file."
         }
     
     try:
@@ -145,16 +158,16 @@ def retrieve_memory(query: str, relationship_with_user: str = "friend", style_hi
             }
         
         # 使用retriever获取相关上下文
-        retrieval_results = memoryos_instance.retriever.retrieve_context(
+        retrieval_results = memcontext_instance.retriever.retrieve_context(
             user_query=query,
-            user_id=memoryos_instance.user_id
+            user_id=memcontext_instance.user_id
         )
         
         # 获取短期记忆内容
-        short_term_history = memoryos_instance.short_term_memory.get_all()
+        short_term_history = memcontext_instance.short_term_memory.get_all()
         
         # 获取用户画像
-        user_profile = memoryos_instance.get_user_profile_summary()
+        user_profile = memcontext_instance.get_user_profile_summary()
         
         # 组织返回结果
         result = {
@@ -207,28 +220,28 @@ def get_user_profile(include_knowledge: bool = True, include_assistant_knowledge
     Returns:
         包含用户画像信息的字典
     """
-    global memoryos_instance
+    global memcontext_instance
     
-    if memoryos_instance is None:
+    if memcontext_instance is None:
         return {
             "status": "error",
-            "message": "MemoryOS is not initialized. Please check the configuration file."
+            "message": "Memcontext is not initialized. Please check the configuration file."
         }
     
     try:
         # 获取用户画像
-        user_profile = memoryos_instance.get_user_profile_summary()
+        user_profile = memcontext_instance.get_user_profile_summary()
         
         result = {
             "status": "success",
             "timestamp": get_timestamp(),
-            "user_id": memoryos_instance.user_id,
-            "assistant_id": memoryos_instance.assistant_id,
+            "user_id": memcontext_instance.user_id,
+            "assistant_id": memcontext_instance.assistant_id,
             "user_profile": user_profile if user_profile and user_profile.lower() != "none" else "No detailed user profile"
         }
         
         if include_knowledge:
-            user_knowledge = memoryos_instance.user_long_term_memory.get_user_knowledge()
+            user_knowledge = memcontext_instance.user_long_term_memory.get_user_knowledge()
             result["user_knowledge"] = [
                 {
                     "knowledge": item["knowledge"],
@@ -239,7 +252,7 @@ def get_user_profile(include_knowledge: bool = True, include_assistant_knowledge
             result["user_knowledge_count"] = len(user_knowledge)
         
         if include_assistant_knowledge:
-            assistant_knowledge = memoryos_instance.get_assistant_knowledge_summary()
+            assistant_knowledge = memcontext_instance.get_assistant_knowledge_summary()
             result["assistant_knowledge"] = [
                 {
                     "knowledge": item["knowledge"],
@@ -259,7 +272,7 @@ def get_user_profile(include_knowledge: bool = True, include_assistant_knowledge
 
 def main():
     """主函数"""
-    parser = argparse.ArgumentParser(description="MemoryOS MCP Server")
+    parser = argparse.ArgumentParser(description="Memcontext MCP Server")
     parser.add_argument(
         "--config", 
         type=str, 
@@ -269,12 +282,12 @@ def main():
     
     args = parser.parse_args()
     
-    global memoryos_instance
+    global memcontext_instance
     
     try:
-        # 初始化MemoryOS
-        memoryos_instance = init_memoryos(args.config)
-        print(f"MemoryOS MCP Server 已启动，用户ID: {memoryos_instance.user_id}", file=sys.stderr)
+        # 初始化Memcontext
+        memcontext_instance = init_memcontext(args.config)
+        print(f"Memcontext MCP Server 已启动，用户ID: {memcontext_instance.user_id}", file=sys.stderr)
         print(f"配置文件: {args.config}", file=sys.stderr)
         
         # 启动MCP服务器 - 使用stdio传输

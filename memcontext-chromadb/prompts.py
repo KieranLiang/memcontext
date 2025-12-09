@@ -1,5 +1,5 @@
 """
-This file stores all the prompts used by the Memoryos system.
+This file stores all the prompts used by the Memcontext system.
 """
 
 # Prompt for generating system response (from main_memoybank.py, generate_system_response_with_meta)

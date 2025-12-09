@@ -10,26 +10,26 @@ import json
 import time
 sys.path.append('.')
 
-from memoryos import Memoryos
+from memcontext import Memcontext
 
 def main():
     print("=" * 60)
-    print("🚀 MemoryOS Travel Planning Memory Test")
+    print("🚀 Memcontext Travel Planning Memory Test")
     print("=" * 60)
     
-    # Create Memoryos instance
-    memoryos = Memoryos(
+    # Create Memcontext instance
+    memcontext = Memcontext(
         user_id='travel_user_test',
-        openai_api_key='',
-        openai_base_url='https://cn2us02.opapi.win/v1',
+        openai_api_key=os.environ.get('OPENAI_API_KEY', ''),
+        openai_base_url=os.environ.get('OPENAI_BASE_URL', ''),
         data_storage_path='./comprehensive_test_data',
         assistant_id='travel_assistant',
-        embedding_model_name='',
+        embedding_model_name=os.environ.get('EMBEDDING_MODEL', 'all-MiniLM-L6-v2'),
         mid_term_capacity=1000,
         mid_term_heat_threshold=12.0,
         mid_term_similarity_threshold=0.7,
         short_term_capacity=2,
-        llm_model='gpt-4.1-mini'
+        llm_model=os.environ.get('LLM_MODEL', 'gpt-4o-mini')
     )
     
     print("📝 Phase 1: Adding 30 rounds of travel planning conversations...")
@@ -76,17 +76,17 @@ def main():
     # Add conversations
     for i, (user_input, agent_response) in enumerate(conversations, 1):
         print(f"  [{i:2d}/{len(conversations)}] Adding conversation: {user_input[:40]}...")
-        memoryos.add_memory(user_input, agent_response)
+        memcontext.add_memory(user_input, agent_response)
         
         # Display status every 10 rounds
         if i % 10 == 0:
-            sessions = memoryos.mid_term_memory.sessions
+            sessions = memcontext.mid_term_memory.sessions
             if sessions:
                 max_heat = max(session.get('H_segment', 0) for session in sessions.values())
                 print(f"    Current max heat: {max_heat:.2f}")
     
     print(f"\n🔥 Phase 2: Force triggering mid-term analysis...")
-    memoryos.force_mid_term_analysis()
+    memcontext.force_mid_term_analysis()
     
     print(f"\n⏳ Phase 3: Waiting for system synchronization...")
     time.sleep(2)
@@ -126,7 +126,7 @@ def main():
         
         try:
             # Get response from memory system
-            response = memoryos.get_response(test_case['query'])
+            response = memcontext.get_response(test_case['query'])
             print(f"System Response: {response}")
             
             # Check if expected keywords are in the response
@@ -185,6 +185,6 @@ def main():
 if __name__ == "__main__":
     success = main()
     if success:
-        print("\n🎊 Congratulations! MemoryOS Travel Planning Memory Test Completed Successfully!")
+        print("\n🎊 Congratulations! Memcontext Travel Planning Memory Test Completed Successfully!")
     else:
-        print("\n🔧 Memory system needs further optimization.") 
+        print("\n🔧 Memcontext system needs further optimization.") 

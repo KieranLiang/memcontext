@@ -15,10 +15,10 @@ ADD_MM_ENDPOINT = f"{SERVER}/add_multimodal_memory"
 def init_memory(session):
     payload = {
         "user_id": "video_user",
-        "api_key": "fed0bdea-c0d3-4880-b4ce-ded3e1d9d3b0",
+        "api_key": os.environ.get("OPENAI_API_KEY", ""),
         "base_url": "https://api.openai.com/v1",
         "model_name": "gpt-4o-mini",
-        "siliconflow_key": "sk-obqoqilbxahjmslkvyyuncxvinhuofzgoxnptaqgnnpxwcmx",
+        "siliconflow_key": os.environ.get("SILICONFLOW_API_KEY", ""),
     }
     resp = session.post(SESSION_INIT_ENDPOINT, json=payload, timeout=60)
     resp.raise_for_status()

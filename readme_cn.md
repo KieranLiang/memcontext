@@ -1,4 +1,4 @@
-# MemoryOS
+# MemContext
 
 <div align="center">
   <img src="https://github.com/user-attachments/assets/eb3b167b-1ace-476e-89dc-1a7891356e0b" alt="logo" width="400"/>
@@ -23,12 +23,12 @@
 
 <h5 align="center"> 🎉 如果您喜欢我们的项目，请在 GitHub 上给我们一个星 ⭐ 以获取最新更新。</h5>
 
-**MemoryOS** 旨在为个性化 AI 智能体提供记忆操作系统，以实现更连贯、个性化和情境感知的交互。它从操作系统的内存管理原理中汲取灵感，采用分层存储架构，包含四个核心模块：存储、更新、检索和生成，以实现全面高效的记忆管理。在 LoCoMo 基准测试中，该模型在 F1 和 BLEU-1 分数上平均提升了 **49.11%** 和 **46.18%**。
+**MemContext** 旨在为个性化 AI 智能体提供记忆操作系统，以实现更连贯、个性化和情境感知的交互。它从操作系统的内存管理原理中汲取灵感，采用分层存储架构，包含四个核心模块：存储、更新、检索和生成，以实现全面高效的记忆管理。在 LoCoMo 基准测试中，该模型在 F1 和 BLEU-1 分数上平均提升了 **49.11%** 和 **46.18%**。
 
   - **论文**: <a href="[https://arxiv.org/abs/2506.06326](https://arxiv.org/abs/2506.06326)" target="_blank">[https://arxiv.org/abs/2506.06326](https://arxiv.org/abs/2506.06326)</a>
-  - **网站**: <a href="[https://baijia.online/memoryos/](https://baijia.online/memoryos/)" target="_blank">[https://baijia.online/memoryos/](https://baijia.online/memoryos/)</a>
-  - **文档**: <a href="[https://bai-lab.github.io/MemoryOS/docs](https://bai-lab.github.io/MemoryOS/docs)" target="_blank">[https://bai-lab.github.io/MemoryOS/docs](https://bai-lab.github.io/MemoryOS/docs)</a>
-  - **YouTube 视频**: **MemoryOS MCP + RAG Agent That Can Remember Anything**
+  - **网站**: <a href="[https://baijia.online/memcontext/](https://baijia.online/memcontext/)" target="_blank">[https://baijia.online/memcontext/](https://baijia.online/memcontext/)</a>
+  - **文档**: <a href="[https://bai-lab.github.io/MemContext/docs](https://bai-lab.github.io/MemContext/docs)" target="_blank">[https://bai-lab.github.io/MemContext/docs](https://bai-lab.github.io/MemContext/docs)</a>
+  - **YouTube 视频**: **MemContext MCP + RAG Agent That Can Remember Anything**
   - <a href="[https://www.youtube.com/watch?v=WHQu8fpEOaU](https://www.youtube.com/watch?v=WHQu8fpEOaU) ">[https://www.youtube.com/watch?v=WHQu8fpEOaU](https://www.youtube.com/watch?v=WHQu8fpEOaU) </a>
 
 <span id='features'/>
@@ -41,36 +41,36 @@
   * 🧠 **即插即用的记忆管理架构**
     </br> 支持无缝集成的可插拔记忆模块——包括存储引擎、更新策略和检索算法。
 
-  * ✨ **轻松创建智能体工作流** (**MemoryOS-MCP**)
+  * ✨ **轻松创建智能体工作流** (**MemContext-MCP**)
     </br> 通过调用 MCP 服务器提供的模块化工具，为各种 AI 应用注入长期记忆能力。
 
   * 🌐 **通用大语言模型支持**
-    </br> MemoryOS 无缝集成各种大语言模型 (例如 OpenAI, Deepseek, Qwen ...)。
+    </br> MemContext 无缝集成各种大语言模型 (例如 OpenAI, Deepseek, Qwen ...)。
 
 <span id='news'/>
 
 ## 📣 最新消息
 
-  * *<mark>[new]</mark>* 🔥🔥🔥 **[2025-07-15]**: **🔌 支持** 向量数据库 [Chromadb](https://www.google.com/search?q=%23memoryos_chromadb-getting-started)
+  * *<mark>[new]</mark>* 🔥🔥🔥 **[2025-07-15]**: **🔌 支持** 向量数据库 [Chromadb](https://www.google.com/search?q=%23memcontext_chromadb-getting-started)
   * *<mark>[new]</mark>* 🔥🔥🔥 **[2025-07-15]**: **🔌 集成** [Docker](https://www.google.com/search?q=%23docker-getting-started) 到部署流程
   * *<mark>[new]</mark>* 🔥🔥 **[2025-07-14]**: **⚡ 加速** MCP 并行化
   * *<mark>[new]</mark>* 🔥🔥 **[2025-07-14]**: **🔌 支持** BGE-M3 & Qwen3 嵌入模型 (PyPI 和 MCP)
-  * *<mark>[new]</mark>* 🔥 **[2025-07-09]**: **📊 评估** MemoryOS 在 LoCoMo 数据集上的表现: 公开可用 [👉复现](https://www.google.com/search?q=%23reproduce)
+  * *<mark>[new]</mark>* 🔥 **[2025-07-09]**: **📊 评估** MemContext 在 LoCoMo 数据集上的表现: 公开可用 [👉复现](https://www.google.com/search?q=%23reproduce)
   * *<mark>[new]</mark>* 🔥 **[2025-07-08]**: **🏆 新增配置参数**
-  * 新增参数配置: **similarity_threshold**。配置文件请参见 📖 [文档](https://bai-lab.github.io/MemoryOS/docs) 页面。
+  * 新增参数配置: **similarity_threshold**。配置文件请参见 📖 [文档](https://bai-lab.github.io/MemContext/docs) 页面。
   * *<mark>[new]</mark>* **[2025-07-07]**: **🚀 5倍速度提升**
-  * MemoryOS (PYPI) 实现已升级：通过并行化优化，**速度提升5倍** (延迟降低)。
+  * MemContext (PYPI) 实现已升级：通过并行化优化，**速度提升5倍** (延迟降低)。
   * *<mark>[new]</mark>* **[2025-07-07]**: **✨ 现已支持 R1 模型**
-  * MemoryOS 支持配置和使用 **Deepseek-r1 和 Qwen3** 等推理模型。
-  * *<mark>[new]</mark>* **[2025-07-07]**: **✨MemoryOS Playground 上线**
-  * **MemoryOS Platform** 的 Playground 已经上线！[👉MemoryOS Platform](https://baijia.online/memoryos/)。如果您需要**邀请码**，请随时 [联系我们](https://www.google.com/search?q=%23community)。
-  * *<mark>[new]</mark>* **[2025-06-15]**:🛠️ 开源 **MemoryOS-MCP** 发布！现在可在智能体客户端上配置，以实现无缝集成和定制。[👉 MemoryOS-MCP](https://www.google.com/search?q=%23memoryos-mcp-getting-started)。
+  * MemContext 支持配置和使用 **Deepseek-r1 和 Qwen3** 等推理模型。
+  * *<mark>[new]</mark>* **[2025-07-07]**: **✨MemContext Playground 上线**
+  * **MemContext Platform** 的 Playground 已经上线！[👉MemContext Platform](https://baijia.online/memcontext/)。如果您需要**邀请码**，请随时 [联系我们](https://www.google.com/search?q=%23community)。
+  * *<mark>[new]</mark>* **[2025-06-15]**:🛠️ 开源 **MemContext-MCP** 发布！现在可在智能体客户端上配置，以实现无缝集成和定制。[👉 MemContext-MCP](https://www.google.com/search?q=%23memcontext-mcp-getting-started)。
   * **[2025-05-30]**: 📄 论文-**Memory OS of AI Agent** 已在 arXiv 上发布: [https://arxiv.org/abs/2506.06326](https://arxiv.org/abs/2506.06326)。
-  * **[2025-05-30]**: **MemoryOS** 初始版本发布！具有短期、中期和长期角色记忆，以及自动用户画像和知识更新功能。
+  * **[2025-05-30]**: **MemContext** 初始版本发布！具有短期、中期和长期角色记忆，以及自动用户画像和知识更新功能。
 
 <span id='list'/>
 
-## 🔥 MemoryOS 支持列表
+## 🔥 MemContext 支持列表
 
 <table>
 <thead>
@@ -160,9 +160,9 @@
   * <a href='#list'>🔍 支持列表</a>
   * <a href='#structure'> 📁 项目结构</a>
   * <a href='#pypi-mode'>🎯 快速入门</a>
-      * <a href='pypi-mode'>通过 PYPI 安装 MemoryOS</a>
-      * <a href='#MCP-mode'>MemoryOS-MCP</a>
-      * <a href='https://www.google.com/search?q=%23memoryos_chromadb-getting-started'>MemoryOS-chromadb</a>
+      * <a href='pypi-mode'>通过 PYPI 安装 MemContext</a>
+      * <a href='#MCP-mode'>MemContext-MCP</a>
+      * <a href='https://www.google.com/search?q=%23memcontext_chromadb-getting-started'>MemContext-chromadb</a>
       * <a href='https://www.google.com/search?q=%23docker-getting-started'>Docker</a>
   * <a href='#todo'>☑️ 待办事项</a>
   * <a href='https://www.google.com/search?q=%23reproduce'>🔬 如何复现论文中的结果</a>
@@ -181,11 +181,11 @@
 ## 🏗️ 项目结构
 
 ```
-memoryos/
-├── __init__.py         # 初始化 MemoryOS 包
+memcontext/
+├── __init__.py         # 初始化 MemContext 包
 ├── __pycache__/        # Python 缓存目录 (自动生成)
 ├── long_term.py        # 管理长期角色记忆 (用户画像, 知识)
-├── memoryos.py         # MemoryOS 主类，协调所有组件
+├── memcontext.py         # MemContext 主类，协调所有组件
 ├── mid_term.py         # 管理中期记忆，整合短期交互
 ├── prompts.py          # 包含用于 LLM 交互的提示 (例如，摘要，分析)
 ├── retriever.py        # 从所有记忆层检索相关信息
@@ -196,27 +196,27 @@ memoryos/
 
 <span id='pypi-mode'/>
 
-## 📖 MemoryOS_PyPi 上手指南
+## 📖 MemContext_PyPi 上手指南
 
 ### 环境要求
 
   * Python >= 3.10
-  * conda create -n MemoryOS python=3.10
-  * conda activate MemoryOS
+  * conda create -n MemContext python=3.10
+  * conda activate MemContext
 
 ### 安装
 
 #### 从 PyPi 下载
 
 ```bash
-pip install memoryos-pro -i https://pypi.org/simple
+pip install memcontext-pro -i https://pypi.org/simple
 ```
 
 #### 从 GitHub 下载 (最新版本)
 
 ```bash
-git clone https://github.com/BAI-LAB/MemoryOS.git
-cd MemoryOS/memoryos-pypi
+git clone https://github.com/LifeContext/memcontext.git
+cd memcontext/memcontext-pypi
 pip install -r requirements.txt
 ```
 
@@ -224,7 +224,7 @@ pip install -r requirements.txt
 
 ```python
 import os
-from memoryos import Memoryos
+from memcontext import Memcontext
 
 # --- 基本配置 ---
 USER_ID = "demo_user"
@@ -235,12 +235,12 @@ DATA_STORAGE_PATH = "./simple_demo_data"
 LLM_MODEL = "gpt-4o-mini"
 
 def simple_demo():
-    print("MemoryOS 简单演示")
+    print("MemContext 简单演示")
 
-    # 1. 初始化 MemoryOS
-    print("正在初始化 MemoryOS...")
+    # 1. 初始化 MemContext
+    print("正在初始化 MemContext...")
     try:
-        memo = Memoryos(
+        memo = Memcontext(
             user_id=USER_ID,
             openai_api_key=API_KEY,
             openai_base_url=BASE_URL,
@@ -254,7 +254,7 @@ def simple_demo():
             # 支持 Qwen/Qwen3-Embedding-0.6B, BAAI/bge-m3, all-MiniLM-L6-v2
             embedding_model_name="BAAI/bge-m3"
         )
-        print("MemoryOS 初始化成功！n")
+        print("MemContext 初始化成功！n")
     except Exception as e:
         print(f"错误: {e}")
         return
@@ -282,7 +282,7 @@ if __name__ == "__main__":
 
 <span id='MCP-mode'/>
 
-## 📖 MemoryOS-MCP 上手指南
+## 📖 MemContext-MCP 上手指南
 
 ### 🔧 核心工具
 
@@ -301,7 +301,7 @@ if __name__ == "__main__":
 ### 1. 安装依赖
 
 ```bash
-cd memoryos-mcp
+cd memcontext-mcp
 pip install -r requirements.txt
 ```
 
@@ -314,7 +314,7 @@ pip install -r requirements.txt
   "user_id": "用户ID",
   "openai_api_key": "OpenAI API 密钥",
   "openai_base_url": "https://api.openai.com/v1",
-  "data_storage_path": "./memoryos_data",
+  "data_storage_path": "./memcontext_data",
   "assistant_id": "助手ID",
   "llm_model": "gpt-4o-mini",
   "embedding_model_name": "BAAI/bge-m3"
@@ -342,12 +342,12 @@ python test_comprehensive.py
 # 这应该更改为您虚拟环境的 Python 解释器
 ```
 
-## 📖MemoryOS_Chromadb 上手指南
+## 📖MemContext_Chromadb 上手指南
 
 ### 1. 安装依赖
 
 ```bash
-cd memoryos-chromadb
+cd memcontext-chromadb
 pip install -r requirements.txt
 ```
 
@@ -355,7 +355,7 @@ pip install -r requirements.txt
 
 ```bash
 # 编辑信息在 comprehensive_test.py 中
-    memoryos = Memoryos(
+    memcontext = Memcontext(
         user_id='travel_user_test',
         openai_api_key='',
         openai_base_url='',
@@ -373,29 +373,29 @@ python3 comprehensive_test.py
 
 ## 📖Docker 上手指南
 
-您可以通过两种方式使用 Docker 运行 MemoryOS：拉取官方镜像或从 Dockerfile 构建您自己的镜像。这两种方法都适用于快速设置、测试和生产部署。
+您可以通过两种方式使用 Docker 运行 MemContext：拉取官方镜像或从 Dockerfile 构建您自己的镜像。这两种方法都适用于快速设置、测试和生产部署。
 
 ### 选项 1: 拉取官方镜像
 
 ```bash
 # 拉取最新的官方镜像
-docker pull ghcr.io/bai-lab/memoryos:latest
+docker pull ghcr.io/bai-lab/memcontext:latest
 
-docker run -it --gpus=all ghcr.io/bai-lab/memoryos /bin/bash
+docker run -it --gpus=all ghcr.io/bai-lab/memcontext /bin/bash
 ```
 
 ### 选项 2: 从 Dockerfile 构建
 
 ```bash
 # 克隆仓库
-git clone https://github.com/BAI-LAB/MemoryOS.git
+git clone https://github.com/LifeContext/memcontext.git
 
-cd MemoryOS
+cd memcontext
 
 # 构建 Docker 镜像 (确保 Dockerfile 存在)
-docker build -t memoryos .
+docker build -t memcontext .
 
-docker run -it --gpus=all memoryos /bin/bash
+docker run -it --gpus=all memcontext /bin/bash
 ```
 
 ## 🎯 复现
@@ -411,7 +411,7 @@ python3 evalution_loco.py
 
 ## ☑️ 待办事项
 
-MemoryOS 正在不断发展！以下是即将推出的功能：
+MemContext 正在不断发展！以下是即将推出的功能：
 
   - **进行中🚀**: **集成基准测试**: 标准化的基准测试套件，用于 Mem0、Zep 和 OpenAI 的跨模型比较
   - 🏗️ 实现跨不同系统的无缝记忆交换和集成。
@@ -422,7 +422,7 @@ MemoryOS 正在不断发展！以下是即将推出的功能：
 
 ## 📖 文档
 
-更详细的文档即将推出 🚀，我们将在 [文档](https://bai-lab.github.io/MemoryOS/docs) 页面更新。
+更详细的文档即将推出 🚀，我们将在 [文档](https://bai-lab.github.io/MemContext/docs) 页面更新。
 
 <span id='cite'/>
 
@@ -431,7 +431,7 @@ MemoryOS 正在不断发展！以下是即将推出的功能：
 **如果您觉得这个项目有用，请考虑引用我们的论文：**
 
 ```bibtex
-@misc{kang2025memoryosaiagent,
+@misc{kang2025memcontextaiagent,
       title={Memory OS of AI Agent}, 
       author={Jiazheng Kang and Mingming Ji and Zhe Zhao and Ting Bai},
       year={2025},
@@ -462,8 +462,8 @@ MemoryOS 正在不断发展！以下是即将推出的功能：
 
 ## 🌟 Star 历史
 
-[![Star History Chart](https://api.star-history.com/svg?repos=BAI-LAB/MemoryOS&type=Timeline)](https://www.star-history.com/#BAI-LAB/MemoryOS&Timeline)
+[![Star History Chart](https://api.star-history.com/svg?repos=BAI-LAB/MemContext&type=Timeline)](https://www.star-history.com/#BAI-LAB/MemContext&Timeline)
 
 ## 免责声明
 
-本项目 MemoryOS (Memory Operation System) 由百家 AI 团队开发，与 memoryOS ([https://memoryos.com](https://memoryos.com)) 无任何关联。此处使用“MemoryOS”名称仅为学术讨论目的。
+本项目 MemContext (Memory Operation System) 由百家 AI 团队开发，与 memoryOS ([https://memcontext.com](https://memcontext.com)) 无任何关联。此处使用“MemContext”名称仅为学术讨论目的。

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 echo "========================================"
-echo "🧠 MemoryOS Demo Launcher"
+echo "🧠 Memcontext Demo Launcher"
 echo "========================================"
 
 # Set working directory
@@ -16,10 +16,10 @@ echo "========================================"
 
 # Install dependencies if needed
 # echo "📦 Installing dependencies..."
-cd memoryos/memdemo
+cd memcontext-playground/memdemo
 # pip install -q -r requirements.txt
 
-echo "🚀 Starting MemoryOS Demo..."
+echo "🚀 Starting Memcontext Demo..."
 echo "🌐 Access the demo at: http://localhost:5000"
 echo "🌐 Or access via: http://[your-server-ip]:5000"
 echo "========================================"

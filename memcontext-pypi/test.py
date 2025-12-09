@@ -1,6 +1,6 @@
 
 import os
-from memoryos import Memoryos
+from memcontext import Memcontext
 
 # --- Basic Configuration ---
 USER_ID = "demo_user"
@@ -8,15 +8,15 @@ ASSISTANT_ID = "demo_assistant"
 API_KEY = ""  # Replace with your key
 BASE_URL = ""  # Optional: if using a custom OpenAI endpoint
 DATA_STORAGE_PATH = ""
-LLM_MODEL = "gpt-4o-mini"
+LLM_MODEL = ""
 
 def simple_demo():
-    print("MemoryOS Simple Demo")
+    print("Memcontext Simple Demo")   
     
-    # 1. Initialize MemoryOS
-    print("Initializing MemoryOS...")
+    # 1. Initialize Memcontext
+    print("Initializing Memcontext...")
     try:
-        memo = Memoryos(
+        memo = Memcontext(    
             user_id=USER_ID,
             openai_api_key=API_KEY,
             openai_base_url=BASE_URL,
@@ -28,9 +28,9 @@ def simple_demo():
             retrieval_queue_capacity=10,
             long_term_knowledge_capacity=100,
             mid_term_similarity_threshold=0.6,
-            embedding_model_name=""
+            embedding_model_name="all-MiniLM-L6-v2"  # 使用默认的 embedding 模型
         )
-        print("MemoryOS initialized successfully!\n")
+        print("Memcontext initialized successfully!\n")
     except Exception as e:
         print(f"Error: {e}")
         return

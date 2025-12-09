@@ -1,4 +1,4 @@
-# MemoryOS Core Dependencies
+# Memcontext Core Dependencies
 # Core scientific computing and ML libraries
 numpy==1.24.*
 sentence-transformers==5.0.0 # Updated for Qwen model support

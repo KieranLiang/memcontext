@@ -12,7 +12,7 @@ logging.getLogger("httpx").setLevel(logging.WARNING)
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="快速测试 memoryos VideoConverter（基于 VideoRAG 的真实视频理解）"
+        description="快速测试 memcontext VideoConverter（基于 VideoRAG 的真实视频理解）"
     )
     parser.add_argument(
         "--video",
@@ -46,13 +46,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--deepseek-key",
         type=str,
-        default="sk-49ac078416f84608b8bd709210fa2d93",
+        default=os.environ.get("DEEPSEEK_API_KEY", ""),
         help="DeepSeek API Key（可选，若已在环境变量中配置则无需传入）",
     )
     parser.add_argument(
         "--siliconflow-key",
         type=str,
-        default="sk-obqoqilbxahjmslkvyyuncxvinhuofzgoxnptaqgnnpxwcmx",
+        default=os.environ.get("SILICONFLOW_API_KEY", ""),
         help="硅基流动 API Key，用于 bge-m3 embedding（可选）",
     )
     return parser.parse_args()

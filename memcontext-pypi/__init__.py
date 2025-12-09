@@ -1,3 +1,3 @@
-from .memoryos import Memoryos
+from .memcontext import Memcontext    
 
-__all__ = ['Memoryos'] 
+__all__ = ['Memcontext'] 

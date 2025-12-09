@@ -1,4 +1,4 @@
-"""Utilities for handling multimodal inputs before they are written to MemoryOS."""
+"""Utilities for handling multimodal inputs before they are written to Memcontext."""
 
 from .converter import (
     MultimodalConverter,

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MemoryOS Documentation</title>
+  <title>Memcontext Documentation</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -325,30 +325,30 @@
 <body>
   <div class="container">
     <nav class="sidebar">
-      <div class="nav-title">MemoryOS Docs</div>
+      <div class="nav-title">Memcontext Docs</div>
       <ul class="nav-list">
-        <li><a class="nav-link" href="#" data-section="welcome">Welcome to MemoryOS</a></li>
+        <li><a class="nav-link" href="#" data-section="welcome">Welcome to Memcontext</a></li>
         <li><a class="nav-link" href="#" data-section="getstarted">Get started</a></li>
         <li><a class="nav-link" href="#" data-section="configure">Configure Instruction</a></li>
         <li><a class="nav-link" href="#" data-section="api-reference">API Reference</a></li>
         <li><a class="nav-link" href="#" data-section="howitworks">How It Works</a></li>
-        <li><a class="nav-link" href="#" data-section="platform">MemoryOS Playground</a></li>
+        <li><a class="nav-link" href="#" data-section="platform">Memcontext Playground</a></li>
       </ul>
     </nav>
     <main class="main-content">
       <header>
         <div class="brand">
-          <img src="./memoryos.png" alt="MemoryOS Logo" class="brand-logo" style="width: 60px; height: 60px; display: flex;margin-top: 15px;margin-left: 13px;"/>
-          MemoryOS
+          <img src="./memcontext.png" alt="Memcontext Logo" class="brand-logo" style="width: 60px; height: 60px; display: flex;margin-top: 15px;margin-left: 13px;"/>
+          Memcontext
         </div>
-        <a class="github-link" href="https://github.com/BAI-LAB/MemoryOS" target="_blank" rel="noopener">
+        <a class="github-link" href="https://github.com/LifeContext/memcontext/" target="_blank" rel="noopener">
           <svg height="20" viewBox="0 0 16 16" fill="currentColor" width="20"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.01.08-2.1 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.09.16 1.9.08 2.1.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.19 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z"></path></svg>
           GitHub
         </a>
       </header>
       <section class="section" id="welcome">
-        <h2>Welcome to MemoryOS</h2>
-        <p><b>MemoryOS</b> is a memory operating system for personalized AI agents, enabling more coherent, personalized, and context-aware interactions. It adopts a hierarchical storage architecture with four core modules: Storage, Updating, Retrieval, and Generation, to achieve comprehensive and efficient memory management.<br><br>
+        <h2>Welcome to Memcontext</h2>
+        <p><b>Memcontext</b> is a memory operating system for personalized AI agents, enabling more coherent, personalized, and context-aware interactions. It adopts a hierarchical storage architecture with four core modules: Storage, Updating, Retrieval, and Generation, to achieve comprehensive and efficient memory management.<br><br>
         <b>Key Features:</b></p>
         <ul class="features">
           <li>🏆 <b>Top Performance</b>: SOTA results in long-term memory benchmarks, boosting F1 by 49.11% and BLEU-1 by 46.18%.</li>
@@ -363,7 +363,7 @@
       <section class="section" id="getstarted">
         <h2>Get Started</h2>
         <ul class="features">
-          <li><b>MemoryOS_PYPI Getting Started</b></li>
+          <li><b>Memcontext_PYPI Getting Started</b></li>
           <ul>
             <li><b>Prerequisites</b>
               <ul>
@@ -371,15 +371,15 @@
               </ul>
             </li>
             <li><b>Installation</b>
-              <pre><code>conda create -n MemoryOS python=3.10
-conda activate MemoryOS
-git clone https://github.com/BAI-LAB/MemoryOS.git
-cd MemoryOS/memoryos-pypi
+              <pre><code>conda create -n Memcontext python=3.10
+conda activate Memcontext
+git clone https://github.com/LifeContext/memcontext.git
+cd memcontext/memcontext-pypi
 pip install -r requirements.txt</code></pre>
             </li>
             <li><b>Basic Usage</b>
               <pre><code>import os
-from memoryos import Memoryos
+from memcontext import Memcontext
 
 # --- Basic Configuration ---
 USER_ID = "demo_user"
@@ -390,12 +390,12 @@ DATA_STORAGE_PATH = "./simple_demo_data"
 LLM_MODEL = "gpt-4o-mini"
 
 def simple_demo():
-    print("MemoryOS Simple Demo")
+    print("Memcontext Simple Demo")
     
-    # 1. Initialize MemoryOS
-    print("Initializing MemoryOS...")
+    # 1. Initialize Memcontext
+    print("Initializing Memcontext...")
     try:
-        memo = Memoryos(
+        memo = Memcontext(
             user_id=USER_ID,
             openai_api_key=API_KEY,
             openai_base_url=BASE_URL,
@@ -407,7 +407,7 @@ def simple_demo():
             retrieval_queue_capacity=7,
             long_term_knowledge_capacity=100
         )
-        print("MemoryOS initialized successfully!\n")
+        print("Memcontext initialized successfully!\n")
     except Exception as e:
         print(f"Error: {e}")
         return
@@ -433,7 +433,7 @@ if __name__ == "__main__":
     simple_demo()</code></pre>
             </li>
           </ul>
-          <li><b>MemoryOS-MCP Getting Started</b></li>
+          <li><b>Memcontext-MCP Getting Started</b></li>
           <ul>
             <li><b>🔧 Core Tools</b>
               <ol>
@@ -443,7 +443,7 @@ if __name__ == "__main__":
               </ol>
             </li>
             <li><b>1. Install dependencies</b>
-              <pre><code>cd memoryos-mcp
+              <pre><code>cd memcontext-mcp
 pip install -r requirements.txt</code></pre>
             </li>
             <li><b>2. Configuration</b><br>Edit <code>config.json</code>:
@@ -451,7 +451,7 @@ pip install -r requirements.txt</code></pre>
   "user_id": "user ID",
   "openai_api_key": "OpenAI API key",
   "openai_base_url": "https://api.openai.com/v1",
-  "data_storage_path": "./memoryos_data",
+  "data_storage_path": "./memcontext_data",
   "assistant_id": "assistant_id",
   "llm_model": "gpt-4o-mini"
 }</code></pre>
@@ -469,36 +469,36 @@ pip install -r requirements.txt</code></pre>
           </ul>
           <br><br>
         <li><b>Docker Deployment</b></li>
-        <p>You can run MemoryOS using Docker in two ways: by pulling the official image or by building your own image from the Dockerfile. Both methods are suitable for quick setup, testing, and production deployment.</p>
+        <p>You can run Memcontext using Docker in two ways: by pulling the official image or by building your own image from the Dockerfile. Both methods are suitable for quick setup, testing, and production deployment.</p>
         <ul class="features">
           <li><b>Option 1: Pull the Official Image</b></li>
         </ul>
         <pre><code># Pull the latest official image
-docker pull ghcr.io/bai-lab/memoryos:latest
+docker pull ghcr.io/bai-lab/memcontext:latest
 
-docker run -it --gpus=all ghcr.io/bai-lab/memoryos /bin/bash</code></pre>
+docker run -it --gpus=all ghcr.io/bai-lab/memcontext /bin/bash</code></pre>
         <ul class="features">
           <li><b>Option 2: Build from Dockerfile</b></li>
         </ul>
         <pre><code># Clone the repository
-git clone https://github.com/BAI-LAB/MemoryOS.git
+git clone https://github.com/LifeContext/memcontext.git
           
-cd MemoryOS
+cd memcontext
 
 # Build the Docker image (make sure Dockerfile is present)
-docker build -t memoryos .
+docker build -t memcontext .
 
-docker run -it --gpus=all memoryos /bin/bash</code></pre>
+docker run -it --gpus=all memcontext /bin/bash</code></pre>
 
-<li><b>MemoryOS_Chromadb Getting Started</b></li>
+<li><b>Memcontext_Chromadb Getting Started</b></li>
 <div style="margin: 24px 0 32px 0;">
   <h3 style="font-size:1.18rem;font-weight:600;">1. Install dependencies</h3>
-  <pre style="font-size:1em;"><code>cd memoryos-chromadb
+  <pre style="font-size:1em;"><code>cd memcontext-chromadb
 pip install -r requirements.txt</code></pre>
   <h3 style="font-size:1.18rem;font-weight:600;">2. Test</h3>
   <div style="background:#f8f9fa;padding:18px 18px 18px 18px;border-radius:8px;margin-bottom:18px;">
     <p>The edit information is in <b>comprehensive_test.py</b></p>
-    <pre style="font-size:1em;"><code>memoryos = Memoryos(
+    <pre style="font-size:1em;"><code>memcontext = Memcontext(
     user_id='travel_user_test',
     openai_api_key='',
     openai_base_url='',
@@ -633,7 +633,7 @@ pip install -r requirements.txt</code></pre>
       <section class="section" id="howitworks">
         <h2>How It Works</h2>
         <ul class="features">
-          <li><b>Initialization:</b> <code>Memoryos</code> is initialized with user and assistant IDs, API keys, data storage paths, and various capacity/threshold settings. It sets up dedicated storage for each user and assistant.</li>
+          <li><b>Initialization:</b> <code>Memcontext</code> is initialized with user and assistant IDs, API keys, data storage paths, and various capacity/threshold settings. It sets up dedicated storage for each user and assistant.</li>
           <li><b>Adding Memories:</b> User inputs and agent responses are added as QA pairs, initially stored in short-term memory.</li>
           <li><b>Short-Term to Mid-Term Processing:</b> When short-term memory is full, the <code>Updater</code> module processes these interactions, consolidating them into meaningful segments and storing them in mid-term memory.</li>
           <li><b>Mid-Term Analysis & LPM Updates:</b> Mid-term memory segments accumulate \"heat\" based on visit frequency and interaction length. When a segment's heat exceeds a threshold, its content is analyzed:
@@ -652,39 +652,39 @@ pip install -r requirements.txt</code></pre>
         </ul>
       </section>
       <section class="section" id="platform">
-        <h2>MemoryOS Playground (Online)</h2>
-        <a class="memory-platform-btn" href="https://baijia.online/memoryos/" target="_blank" rel="noopener">Go to MemoryOS Playground</a>
-        <p style="margin-top:18px;">Web-based memory analytics and management platform for MemoryOS. Coming soon!</p>
-        <h2 style="margin-top:36px;">MemoryOS Playground (Local)</h2>
-        <a class="memory-platform-btn" href="https://github.com/BAI-LAB/MemoryOS/tree/main/memoryos-playground" target="_blank" rel="noopener">Open Local Playground Repo</a>
+        <h2>Memcontext Playground (Online)</h2>
+        <a class="memory-platform-btn" href="https://baijia.online/memcontext/" target="_blank" rel="noopener">Go to Memcontext Playground</a>
+        <p style="margin-top:18px;">Web-based memory analytics and management platform for Memcontext. Coming soon!</p>
+        <h2 style="margin-top:36px;">Memcontext Playground (Local)</h2>
+        <a class="memory-platform-btn" href="https://github.com/LifeContext/memcontext/tree/main/memcontext-playground" target="_blank" rel="noopener">Open Local Playground Repo</a>
         <div style="margin-top:18px;">
           <p><b>Local run steps:</b></p>
-          <pre style="font-size:1.15em;"><code>cd MemoryOS/memoryos-playground/memdemo/
+          <pre style="font-size:1.15em;"><code>cd memcontext/memcontext-playground/memdemo/
 
 python3 app.py</code></pre>
           <ul class="features">
             <li>After launching the main interface, fill in <b>User ID</b>, <b>OpenAI API Key</b>, <b>Model</b>, and <b>API Base URL</b>.</li>
           </ul>
           <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px;">
-            <img src="./local1.png" alt="MemoryOS Playground Local Screenshot 1" style="width:100%;max-width:860px;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);"/>
+            <img src="./local1.png" alt="Memcontext Playground Local Screenshot 1" style="width:100%;max-width:860px;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);"/>
             <ul class="features">
               <li>After entering the system, click the <b>Help</b> button to see what each button does.</li>
             </ul>
-            <img src="./local2.png" alt="MemoryOS Playground Local Screenshot 2" style="width:100%;max-width:860px;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);"/>
+            <img src="./local2.png" alt="Memcontext Playground Local Screenshot 2" style="width:100%;max-width:860px;border-radius:12px;box-shadow:0 4px 24px rgba(0,0,0,0.08);"/>
             <ul class="features">
-              <li>The user's memory is stored under MemoryOS-main/memoryos-playground/memdemo/data</li>
+              <li>The user's memory is stored under Memcontext-main/memcontext-playground/memdemo/data</li>
             </ul>
           </div>
         </div>
       </section>
       <section class="section" id="api-reference">
-        <h2 style="font-size:1.6rem;font-weight:700;margin-top:36px;">MemoryOS Public API Reference</h2>
+        <h2 style="font-size:1.6rem;font-weight:700;margin-top:36px;">Memcontext Public API Reference</h2>
         <hr>
         <h3 style="font-size:1.18rem;font-weight:600;">PyPI</h3>
         <div style="font-size:1.08rem;">
-          <b>Class:</b> <code>Memoryos</code>
+          <b>Class:</b> <code>Memcontext</code>
           <h4 style="margin-top:18px;">Constructor parameters</h4>
-          <pre><code>Memoryos(
+          <pre><code>Memcontext(
     user_id: str,
     assistant_id: str,
     openai_api_key: str,
@@ -710,7 +710,7 @@ python3 app.py</code></pre>
           <p>Get the user profile inferred from conversation history.</p>
         </div>
         <hr>
-        <h3 style="font-size:1.18rem;font-weight:600;">MCP mode (MemoryOS-MCP server tools)</h3>
+        <h3 style="font-size:1.18rem;font-weight:600;">MCP mode (Memcontext-MCP server tools)</h3>
         <div style="font-size:1.08rem;">
           <b>Core API endpoints / tools</b>
           <pre><code>add_memory(user_input: str, agent_response: str) -> None

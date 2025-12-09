@@ -8,12 +8,12 @@ from datetime import datetime
 import secrets
 from werkzeug.utils import secure_filename
 
-# Add parent directory to path to import memoryos
+# Add parent directory to path to import memcontext
 # Ensure the path is /root/autodl-tmp for consistent imports
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-# Import memoryos modules directly
-from memoryos import Memoryos
+# Import memcontext modules directly
+from memcontext import Memcontext
 # Import utils directly from the playground directory
 from utils import get_timestamp
 from multimodal.converters.video_converter import VideoConverter
@@ -22,7 +22,7 @@ from multimodal.converters.videorag_converter import VideoConverter as VideoRAGC
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(16)
 
-# Global memoryos instance (in production, you'd use proper session management)
+# Global memcontext instance (in production, you'd use proper session management)
 memory_systems = {}
 
 # 删除了固定的API_KEY, BASE_URL, MODEL
@@ -95,11 +95,11 @@ def init_memory():
         }
     
     try:
-        # Initialize memoryos for this session
+        # Initialize memcontext for this session
         data_path = './data'
         os.makedirs(data_path, exist_ok=True)
         
-        memory_system = Memoryos(
+        memory_system = Memcontext(
             user_id=user_id,
             openai_api_key=api_key,
             openai_base_url=base_url,
@@ -150,7 +150,7 @@ def chat():
     memory_system = memory_systems[session_id]
     
     try:
-        # Get response from memoryos (this already adds the memory internally)
+        # Get response from memcontext (this already adds the memory internally)
         response = memory_system.get_response(user_input)
         
         # Do NOT add memory again here - it's already done in get_response()
@@ -182,7 +182,7 @@ def add_multimodal_memory_endpoint():
                 return jsonify({'error': 'File upload is required.'}), 400
 
             safe_name = secure_filename(uploaded_file.filename)
-            temp_dir = tempfile.mkdtemp(prefix="memoryos_upload_")
+            temp_dir = tempfile.mkdtemp(prefix="memcontext_upload_")
             temp_path = os.path.join(temp_dir, safe_name or "upload.bin")
             uploaded_file.save(temp_path)
             cleanup_paths.append(temp_dir)
@@ -265,12 +265,14 @@ def add_multimodal_memory_endpoint():
                 'time_range': chunk_meta.get('time_range', ''),
             }
 
+            # 优先使用 chunk.text（完整内容），如果没有则使用 chunk_summary（摘要）
+            chunk_text = chunk.text.strip() if chunk.text else ''
             chunk_summary = chunk_meta.get('chunk_summary', '').strip()
+            agent_reply = chunk_text or chunk_summary or '该视频片段未生成可用摘要'
+            
             video_name = meta_data['video_name']
             time_range = meta_data['time_range']
             user_input = f"{video_name}, {time_range}发生了什么？"
-
-            agent_reply = chunk_summary or '该视频片段未生成可用摘要'
 
             timestamp = get_timestamp()
             # 去重：如果 short-term 中已有相同 video_name 和 time_range 的记忆，则跳过添加
@@ -542,7 +544,7 @@ def clear_memory():
         data_path = memory_system.data_storage_path
         
         # Create new memory system
-        new_memory_system = Memoryos(
+        new_memory_system = Memcontext(
             user_id=user_id,
             openai_api_key=api_key,
             openai_base_url=base_url,

@@ -276,8 +276,8 @@ class MidTermMemory:
             print(f"MidTermMemory: No suitable session to merge (best score {best_overall_score:.2f} < threshold {similarity_threshold}). Creating new session.")
             return self.add_session(summary_for_new_pages, pages_to_insert, keywords_for_new_pages)
 
-    def search_sessions(self, query_text, segment_similarity_threshold=0.1, page_similarity_threshold=0.1, 
-                          top_k_sessions=5, keyword_alpha=1.0, recency_tau_search=3600):
+    def search_sessions(self, query_text, segment_similarity_threshold=0.0, page_similarity_threshold=0.0, 
+                          top_k_sessions=6, keyword_alpha=1.0, recency_tau_search=3600):
         if not self.sessions:
             return []
 
