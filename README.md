@@ -122,8 +122,8 @@ pip install -r requirements.txt
 
 3) Configure keys  
 ```bash
-export OPENAI_API_KEY=YOUR_KEY            # 必填
-export OPENAI_BASE_URL=https://api.openai.com/v1  # 可选，自定义网关时设置
+ export OPENAI_API_KEY=YOUR_KEY            # Required
+export OPENAI_BASE_URL=https://api.openai.com/v1  # Optional, set when using a custom gateway
 ```
 
 4) Minimal usage  
@@ -133,19 +133,19 @@ from memcontext import Memcontext
 mem = Memcontext(
     user_id="demo_user",
     openai_api_key=os.environ["OPENAI_API_KEY"],
-    data_storage_path="./data",             # 持久化目录
+    data_storage_path="./data",             # Persistence directory
     openai_base_url=os.getenv("OPENAI_BASE_URL"),
 )
 
-# 添加一条对话记忆
+# Add a dialogue memory entry
 mem.add_memory(
-    user_input="我最近在学多模态 RAG",
-    agent_response="好的，我会记录你的学习偏好。",
+    user_input="I'm currently learning multimodal RAG",
+    agent_response="Got it, I'll record your learning preference.",
     meta_data={"source": "demo"}
 )
 
-# 检索上下文
-ctx = mem.retrieve_context(user_query="再帮我回顾下上次学的内容？")
+# Retrieve context
+ctx = mem.retrieve_context(user_query="Can you help me review what we learned last time?")
 print(ctx)
 ```
 
@@ -153,7 +153,7 @@ print(ctx)
 ```bash
 cd memdemo
 pip install -r requirements.txt
-python app.py    # 默认端口 5000
+python app.py    # Default port 5000
 ```
 
 ## 🤝 Contributing
