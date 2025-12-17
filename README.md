@@ -56,7 +56,7 @@ We are not building a static database; we are building **Native Spatio-Temporal 
 ContextBase draws inspiration from human cognitive processes and OS storage structures, adopting a tiered storage architecture paired with a dual-path retrieval engine.
 
 <div align="center">
-  <img src="ContextBase_Workflow_v0.png" alt="ContextBase Architecture Workflow" width="100%">
+  <img src="assets/MemContext_Workflow_v0.png" alt="ContextBase Architecture Workflow" width="100%">
 </div>
 
 ### 🧠 Memory Lifecycle
@@ -111,7 +111,50 @@ Supports natural language, image, and video segment queries:
 
 ## ⚡ Quick Start
 
-*(Codebase is being polished and will be released shortly)*
+1) Environment  
+- Python 3.9+  
+- (Optional) create venv: `python -m venv .venv && source .venv/bin/activate` (PowerShell: `.\.venv\Scripts\Activate`)
+
+2) Install dependencies  
+```bash
+pip install -r requirements.txt
+```
+
+3) Configure keys  
+```bash
+ export OPENAI_API_KEY=YOUR_KEY            # Required
+export OPENAI_BASE_URL=https://api.openai.com/v1  # Optional, set when using a custom gateway
+```
+
+4) Minimal usage  
+```python
+from memcontext import Memcontext
+
+mem = Memcontext(
+    user_id="demo_user",
+    openai_api_key=os.environ["OPENAI_API_KEY"],
+    data_storage_path="./data",             # Persistence directory
+    openai_base_url=os.getenv("OPENAI_BASE_URL"),
+)
+
+# Add a dialogue memory entry
+mem.add_memory(
+    user_input="I'm currently learning multimodal RAG",
+    agent_response="Got it, I'll record your learning preference.",
+    meta_data={"source": "demo"}
+)
+
+# Retrieve context
+ctx = mem.retrieve_context(user_query="Can you help me review what we learned last time?")
+print(ctx)
+```
+
+5) Run the demo UI (Flask)  
+```bash
+cd memdemo
+pip install -r requirements.txt
+python app.py    # Default port 5000
+```
 
 ## 🤝 Contributing
 
