@@ -442,7 +442,7 @@ class VideoConverter(MultimodalConverter):
                     "Authorization": f"Bearer {self.siliconflow_api_key}"
                 }
                 
-                response = requests.post(self.siliconflow_api_url, data=payload, files=files, headers=headers, timeout=60)
+                response = requests.post(self.siliconflow_api_url, data=payload, files=files, headers=headers, timeout=120)
                 
                 if response.status_code == 200:
                     result = response.json()

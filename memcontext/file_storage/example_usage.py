@@ -38,7 +38,7 @@ def example_basic_usage():
     manager = FileStorageManager(storage_path, user_id)
     
     # 上传文件（假设有一个测试视频文件）
-    test_video_path = "D:\\project\\memcontext-memcontext\\memcontext-playground\\file_storage\\test3.mp4"  # 替换为实际文件路径
+    test_video_path = "D:\\project\\memcontext-memcontext\\memcontext\\test8.mp4"  # 替换为实际文件路径
     
     if os.path.exists(test_video_path):
         # 上传文件

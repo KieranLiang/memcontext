@@ -312,6 +312,81 @@ def import_from_cache_endpoint():
             'traceback': traceback.format_exc() if app.debug else None
         }), 500
 
+@app.route('/add_multimodal_memory_stream', methods=['POST'])
+def add_multimodal_memory_stream():
+    """流式返回视频处理进度的端点"""
+    from flask import Response, stream_with_context
+    import queue
+    import threading
+    
+    session_id = session.get('memory_session_id')
+    if not session_id or session_id not in memory_systems:
+        def error_gen():
+            yield f"data: {json.dumps({'error': 'Memory system not initialized'})}\n\n"
+        return Response(error_gen(), mimetype='text/event-stream')
+    
+    memory_system = memory_systems[session_id]
+    data = request.get_json(silent=True) or {}
+    
+    file_path = data.get('file_path')
+    converter_type = (data.get('converter_type') or 'video').lower()
+    agent_response = data.get('agent_response')
+    converter_kwargs = data.get('converter_kwargs', {})
+    
+    if not file_path:
+        def error_gen():
+            yield f"data: {json.dumps({'error': 'file_path is required'})}\n\n"
+        return Response(error_gen(), mimetype='text/event-stream')
+    
+    progress_queue = queue.Queue()
+    
+    def progress_callback(progress: float, message: str) -> None:
+        progress_queue.put({'progress': round(float(progress), 4), 'message': message})
+    
+    result_holder = {'result': None, 'error': None}
+    
+    def process_video():
+        try:
+            converter_settings = dict(converter_kwargs or {})
+            converter_settings.setdefault('working_dir', './videorag-workdir')
+            result = memory_system.add_multimodal_memory(
+                source=file_path,
+                source_type='file_path',
+                converter_type=converter_type,
+                agent_response=agent_response,
+                converter_kwargs=converter_settings,
+                progress_callback=progress_callback,
+            )
+            result_holder['result'] = result
+        except Exception as e:
+            result_holder['error'] = str(e)
+        finally:
+            progress_queue.put(None)  # 信号结束
+    
+    def generate():
+        thread = threading.Thread(target=process_video)
+        thread.start()
+        
+        while True:
+            try:
+                item = progress_queue.get(timeout=0.5)
+                if item is None:
+                    break
+                yield f"data: {json.dumps(item)}\n\n"
+            except queue.Empty:
+                yield f"data: {json.dumps({'heartbeat': True})}\n\n"
+        
+        thread.join()
+        
+        if result_holder['error']:
+            yield f"data: {json.dumps({'done': True, 'error': result_holder['error']})}\n\n"
+        else:
+            res = result_holder['result']
+            yield f"data: {json.dumps({'done': True, 'success': True, 'chunks_written': res.get('chunks_written', 0), 'file_id': res.get('file_id')})}\n\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
 @app.route('/add_multimodal_memory', methods=['POST'])
 def add_multimodal_memory_endpoint():
     session_id = session.get('memory_session_id')
