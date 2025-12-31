@@ -141,6 +141,10 @@ class VideoRAG:
             self.caption_tokenizer = None
     
     def __post_init__(self):
+        # 确保 video_embedding_dim 与 LLM 的 embedding_dim 一致，避免维度不匹配
+        if hasattr(self.llm, 'embedding_dim'):
+            self.video_embedding_dim = self.llm.embedding_dim
+        
         _print_config = ",\n  ".join([f"{k} = {v}" for k, v in asdict(self).items()])
         logger.debug(f"VideoRAG init with param:\n\n  {_print_config}\n")
         

@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Optional
 from ..converter import ConversionChunk, ConversionOutput, MultimodalConverter
 from ..factory import ConverterFactory
 from ..videorag import QueryParam, VideoRAG
-from ..videorag._llm import deepseek_bge_config
+from ..videorag._llm import doubao_config
 from ..videorag._utils import always_get_an_event_loop, logger
 from ..videorag._videoutil import (
     merge_segment_information,
@@ -46,21 +46,45 @@ class VideoConverter(MultimodalConverter):
         video_path = self._normalize_source(source, source_type)
         self._ensure_spawn_start_method()
 
-        working_dir = Path(
-            kwargs.get("working_dir")
-            or self.config.get("working_dir")
-            or "./videorag-workdir"
-        ).expanduser()
-        working_dir.mkdir(parents=True, exist_ok=True)
+        # 使用 FileStorageManager 管理文件（如果提供）
+        file_storage_manager = kwargs.get("file_storage_manager") or self.config.get("file_storage_manager")
+        file_storage_id = kwargs.get("file_storage_id") or self.config.get("file_storage_id")
+        
+        if file_storage_manager and file_storage_id:
+            # 使用 FileStorageManager 管理的存储目录作为 working_dir
+            # 格式：storage_base_path/files/videos/{file_id}
+            from memcontext.file_storage import FileType
+            file_record = file_storage_manager.get_file_record(file_storage_id)
+            if file_record and file_record.file_type == FileType.VIDEO:
+                stored_path = file_storage_manager.get_file_path(file_storage_id)
+                if stored_path and os.path.exists(stored_path):
+                    # working_dir 使用 FileStorageManager 的存储目录
+                    working_dir = Path(file_storage_manager.storage_base_path) / "files" / "videos" / file_storage_id
+                    working_dir.mkdir(parents=True, exist_ok=True)
+                    video_path = Path(stored_path)
+                    print(f"VideoConverter: Using FileStorageManager path for file_id={file_storage_id}")
+                else:
+                    raise FileNotFoundError(f"FileStorageManager: Video file not found for file_id={file_storage_id}")
+            else:
+                raise ValueError(f"FileStorageManager: Invalid file_record for file_id={file_storage_id}")
+        else:
+            # 如果没有使用 FileStorageManager，使用传入的 working_dir 或默认值
+            working_dir = Path(
+                kwargs.get("working_dir")
+                or self.config.get("working_dir")
+                or "./videorag-workdir"
+            ).expanduser()
+            working_dir.mkdir(parents=True, exist_ok=True)
+            
+            # Ensure the video file lives in the working_dir so later steps (e.g., segment captioning)
+            # can still access it after any temp upload directory is cleaned up.
+            target_path = working_dir / video_path.name
+            if video_path != target_path:
+                shutil.copyfile(video_path, target_path)
+                video_path = target_path
 
-        # Ensure the video file lives in the working_dir so later steps (e.g., segment captioning)
-        # can still access it after any temp upload directory is cleaned up.
-        target_path = working_dir / video_path.name
-        if video_path != target_path:
-            shutil.copyfile(video_path, target_path)
-            video_path = target_path
-
-        llm_config = kwargs.get("llm_config") or self.config.get("llm_config") or deepseek_bge_config
+        # 默认使用豆包配置
+        llm_config = kwargs.get("llm_config") or self.config.get("llm_config") or doubao_config
         videorag_params = {
             "working_dir": str(working_dir),
             **self.config.get("videorag_params", {}),

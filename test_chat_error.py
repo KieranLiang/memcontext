@@ -8,7 +8,11 @@ import json
 import requests
 import os
 import sys
+from dotenv import load_dotenv
 
+# 加载 .env 文件中的环境变量
+# 从项目根目录查找 .env 文件（假设 test_memdemo.py 在项目根目录）
+load_dotenv()
 SERVER = "http://127.0.0.1:5019"
 SESSION_INIT_ENDPOINT = f"{SERVER}/init_memory"
 CHAT_ENDPOINT = f"{SERVER}/chat"

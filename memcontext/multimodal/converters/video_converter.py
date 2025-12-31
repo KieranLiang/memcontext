@@ -145,7 +145,19 @@ class VideoConverter(MultimodalConverter):
             start_time = 0.0
             
             while start_time < video_duration:
-                end_time = min(start_time + segment_duration, video_duration)
+                # 计算结束时间：如果剩余时长不足1分钟，就按实际剩余时长切分
+                remaining_duration = video_duration - start_time
+                if remaining_duration <= segment_duration:
+                    # 最后一段不足1分钟，按实际剩余时长切分
+                    end_time = video_duration
+                else:
+                    # 正常1分钟切分
+                    end_time = start_time + segment_duration
+                
+                # 确保不会产生空片段
+                if end_time <= start_time:
+                    break
+                
                 segment_path = os.path.join(temp_dir, f"segment_{segment_index:04d}.mp4")
                 
                 self._report_progress(
@@ -185,7 +197,10 @@ class VideoConverter(MultimodalConverter):
                 else:
                     break
                 
+                # 移动到下一段，如果已经到达视频末尾则退出
                 start_time = end_time
+                if start_time >= video_duration:
+                    break
             
             return segments
         except Exception as e:
@@ -427,7 +442,7 @@ class VideoConverter(MultimodalConverter):
                     "Authorization": f"Bearer {self.siliconflow_api_key}"
                 }
                 
-                response = requests.post(self.siliconflow_api_url, data=payload, files=files, headers=headers, timeout=60)
+                response = requests.post(self.siliconflow_api_url, data=payload, files=files, headers=headers, timeout=120)
                 
                 if response.status_code == 200:
                     result = response.json()

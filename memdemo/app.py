@@ -8,6 +8,11 @@ from datetime import datetime
 from pathlib import Path
 import secrets
 from werkzeug.utils import secure_filename
+from dotenv import load_dotenv
+
+# 加载 .env 文件中的环境变量
+# load_dotenv 会自动从当前目录和父目录向上查找 .env 文件
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), '..', '.env'))
 
 # Add parent directory to path to import memcontext
 # Ensure the path is /root/autodl-tmp for consistent imports
@@ -71,38 +76,32 @@ def index():
 def init_memory():
     data = request.json
     user_id = data.get('user_id', '').strip()
-    api_key = data.get('api_key', '').strip()
-    base_url = data.get('base_url', '').strip()
-    model = data.get('model_name', '').strip()
-    siliconflow_key = data.get('siliconflow_key', '').strip()
+    # 豆包配置从环境变量读取
+    api_key = os.environ.get('LLM_API_KEY', '').strip()
+    base_url = os.environ.get('LLM_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3').strip()
+    model = os.environ.get('LLM_MODEL', 'doubao-seed-1-6-flash-250828').strip()
+    embedding_model = os.environ.get('EMBEDDING_MODEL', 'doubao-embedding-large-text-250515').strip()
 
-    # 默认使用 DeepSeek API
-    if not base_url:
-        base_url = "https://api.deepseek.com/v1"
-    if not model:
-        model = "deepseek-chat"
-
-    if not user_id or not api_key:
-        return jsonify({'error': 'User ID 和 API Key 是必需的。Base URL 和 Model Name 如果不提供，将默认使用 DeepSeek API。'}), 400
+    if not user_id:
+        return jsonify({'error': 'User ID 是必需的。'}), 400
+    
+    if not api_key:
+        return jsonify({'error': 'LLM_API_KEY 环境变量未配置，请设置豆包 API Key。'}), 400
     
     assistant_id = f"assistant_{user_id}"
-    embedding_kwargs = {}
-    if siliconflow_key:
-        os.environ['SILICONFLOW_API_KEY'] = siliconflow_key
-        embedding_kwargs = {
-            'use_siliconflow': True,
-            'siliconflow_model': "BAAI/bge-m3"
-        }
-    elif os.environ.get('SILICONFLOW_API_KEY'):
-        embedding_kwargs = {
-            'use_siliconflow': True,
-            'siliconflow_model': "BAAI/bge-m3"
-        }
     
     try:
         # Initialize memcontext for this session
         data_path = './data'
         os.makedirs(data_path, exist_ok=True)
+        
+        # 获取 file_storage_base_path（可选，默认使用项目根目录）
+        file_storage_base_path = data.get('file_storage_base_path', '').strip()
+        if not file_storage_base_path:
+            # 默认使用项目根目录，FileStorageManager 会在根目录下创建 files 目录
+            # app.py 在 memdemo/ 目录下，所以上一级目录就是项目根目录
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+            file_storage_base_path = project_root
         
         memory_system = Memcontext(
             user_id=user_id,
@@ -114,9 +113,10 @@ def init_memory():
             mid_term_capacity=200,   # Smaller for demo
             long_term_knowledge_capacity=1000,  # Smaller for demo
             mid_term_heat_threshold=10.0,
-            embedding_model_name="BAAI/bge-m3" if embedding_kwargs.get('use_siliconflow') else "all-MiniLM-L6-v2",
-            embedding_model_kwargs=embedding_kwargs,
-            llm_model=model
+            embedding_model_name=embedding_model,
+            embedding_model_kwargs={},
+            llm_model=model,
+            file_storage_base_path=file_storage_base_path
         )
         
         session_id = secrets.token_hex(8)
@@ -127,7 +127,7 @@ def init_memory():
             'api_key': api_key,
             'base_url': base_url,
             'model': model,
-            'embedding_provider': 'siliconflow' if embedding_kwargs.get('use_siliconflow') else 'local'
+            'embedding_provider': 'doubao'
         }
         
         return jsonify({
@@ -303,6 +303,81 @@ def import_from_cache_endpoint():
             'traceback': traceback.format_exc() if app.debug else None
         }), 500
 
+@app.route('/add_multimodal_memory_stream', methods=['POST'])
+def add_multimodal_memory_stream():
+    """流式返回视频处理进度的端点"""
+    from flask import Response, stream_with_context
+    import queue
+    import threading
+    
+    session_id = session.get('memory_session_id')
+    if not session_id or session_id not in memory_systems:
+        def error_gen():
+            yield f"data: {json.dumps({'error': 'Memory system not initialized'})}\n\n"
+        return Response(error_gen(), mimetype='text/event-stream')
+    
+    memory_system = memory_systems[session_id]
+    data = request.get_json(silent=True) or {}
+    
+    file_path = data.get('file_path')
+    converter_type = (data.get('converter_type') or 'video').lower()
+    agent_response = data.get('agent_response')
+    converter_kwargs = data.get('converter_kwargs', {})
+    
+    if not file_path:
+        def error_gen():
+            yield f"data: {json.dumps({'error': 'file_path is required'})}\n\n"
+        return Response(error_gen(), mimetype='text/event-stream')
+    
+    progress_queue = queue.Queue()
+    
+    def progress_callback(progress: float, message: str) -> None:
+        progress_queue.put({'progress': round(float(progress), 4), 'message': message})
+    
+    result_holder = {'result': None, 'error': None}
+    
+    def process_video():
+        try:
+            converter_settings = dict(converter_kwargs or {})
+            converter_settings.setdefault('working_dir', './videorag-workdir')
+            result = memory_system.add_multimodal_memory(
+                source=file_path,
+                source_type='file_path',
+                converter_type=converter_type,
+                agent_response=agent_response,
+                converter_kwargs=converter_settings,
+                progress_callback=progress_callback,
+            )
+            result_holder['result'] = result
+        except Exception as e:
+            result_holder['error'] = str(e)
+        finally:
+            progress_queue.put(None)  # 信号结束
+    
+    def generate():
+        thread = threading.Thread(target=process_video)
+        thread.start()
+        
+        while True:
+            try:
+                item = progress_queue.get(timeout=0.5)
+                if item is None:
+                    break
+                yield f"data: {json.dumps(item)}\n\n"
+            except queue.Empty:
+                yield f"data: {json.dumps({'heartbeat': True})}\n\n"
+        
+        thread.join()
+        
+        if result_holder['error']:
+            yield f"data: {json.dumps({'done': True, 'error': result_holder['error']})}\n\n"
+        else:
+            res = result_holder['result']
+            yield f"data: {json.dumps({'done': True, 'success': True, 'chunks_written': res.get('chunks_written', 0), 'file_id': res.get('file_id')})}\n\n"
+    
+    return Response(stream_with_context(generate()), mimetype='text/event-stream')
+
+
 @app.route('/add_multimodal_memory', methods=['POST'])
 def add_multimodal_memory_endpoint():
     session_id = session.get('memory_session_id')
@@ -360,12 +435,9 @@ def add_multimodal_memory_endpoint():
             return jsonify({'error': f'不支持的 converter_type: {converter_type}，可选 video | videorag'}), 400
 
         converter_settings = dict(converter_kwargs or {})
-        deepseek_key = converter_settings.pop('deepseek_key', None)
-        silicon_key = converter_settings.pop('siliconflow_key', None)
-        if deepseek_key:
-            os.environ['DEEPSEEK_API_KEY'] = deepseek_key
-        if silicon_key:
-            os.environ['SILICONFLOW_API_KEY'] = silicon_key
+        # 移除不再使用的 deepseek_key 和 siliconflow_key
+        converter_settings.pop('deepseek_key', None)
+        converter_settings.pop('siliconflow_key', None)
 
         converter_settings.setdefault('working_dir', './videorag-workdir')
         progress_events = []
@@ -394,13 +466,19 @@ def add_multimodal_memory_endpoint():
                     'progress': progress_events
                 }), 500
 
-            return jsonify({
+            response_data = {
                 'success': True,
                 'ingested_rounds': result.get('chunks_written', 0),
                 'file_id': result.get('file_id'),
                 'timestamps': result.get('timestamps', []),
                 'progress': progress_events
-            })
+            }
+            # 如果有存储路径信息，也返回
+            if result.get('storage_path'):
+                response_data['storage_path'] = result.get('storage_path')
+            if result.get('storage_base_path'):
+                response_data['storage_base_path'] = result.get('storage_base_path')
+            return jsonify(response_data)
         except Exception as e:
             return jsonify({
                 'error': f'调用 add_multimodal_memory 失败: {str(e)}',

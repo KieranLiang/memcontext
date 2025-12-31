@@ -105,7 +105,8 @@ class NanoVectorDBVideoSegmentStorage(BaseVectorStorage):
             logger.warning("You insert an empty data to vector DB")
             return []
         list_data, video_paths = [], []
-        cache_path = os.path.join(self.global_config["working_dir"], '_cache', video_name)
+        # 使用 working_dir/segments 目录（与 FileStorageManager 兼容）
+        cache_path = os.path.join(self.global_config["working_dir"], 'segments')
         index_list = list(segment_index2name.keys())
         for index in index_list:
             list_data.append({

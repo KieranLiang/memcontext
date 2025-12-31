@@ -16,7 +16,8 @@ def split_video(
 ):  
     unique_timestamp = str(int(time.time() * 1000))
     video_name = os.path.basename(video_path).split('.')[0]
-    video_segment_cache_path = os.path.join(working_dir, '_cache', video_name)
+    # 使用 working_dir/segments 目录存储片段（与 FileStorageManager 兼容）
+    video_segment_cache_path = os.path.join(working_dir, 'segments')
     if os.path.exists(video_segment_cache_path):
         shutil.rmtree(video_segment_cache_path)
     os.makedirs(video_segment_cache_path, exist_ok=False)
@@ -69,7 +70,9 @@ def saving_video_segments(
 ):
     try:
         with VideoFileClip(video_path) as video:
-            video_segment_cache_path = os.path.join(working_dir, '_cache', video_name)
+            # 使用 working_dir/segments 目录存储片段（与 FileStorageManager 兼容）
+            video_segment_cache_path = os.path.join(working_dir, 'segments')
+            
             for index in tqdm(segment_index2name, desc=f"Saving Video Segments {video_name}"):
                 start, end = segment_times_info[index]["timestamp"][0], segment_times_info[index]["timestamp"][1]
                 video_file = f'{segment_index2name[index]}.{video_output_format}'

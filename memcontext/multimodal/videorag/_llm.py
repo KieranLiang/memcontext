@@ -19,6 +19,7 @@ from ._utils import EmbeddingFunc
 global_openai_async_client = None
 global_azure_openai_async_client = None
 global_ollama_client = None
+global_doubao_async_client = None
 
 def get_openai_async_client_instance():
     global global_openai_async_client
@@ -39,6 +40,21 @@ def get_ollama_async_client_instance():
         # set OLLAMA_HOST or pass in host="http://127.0.0.1:11434"
         global_ollama_client = AsyncClient()  # Adjust base URL if necessary        
     return global_ollama_client
+
+def get_doubao_async_client_instance():
+    """获取豆包（字节跳动）API 客户端实例（用于 LLM）"""
+    global global_doubao_async_client
+    # 每次调用时重新读取环境变量，以便支持动态配置
+    api_key = os.environ.get('LLM_API_KEY') or os.environ.get('DOUBAO_API_KEY', '')
+    base_url = os.environ.get('LLM_BASE_URL') or os.environ.get('DOUBAO_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
+    
+    if not api_key:
+        raise RuntimeError("豆包 API Key 未配置，请设置 LLM_API_KEY 或 DOUBAO_API_KEY 环境变量")
+    
+    # 如果配置已更改，重新创建客户端
+    if global_doubao_async_client is None or hasattr(global_doubao_async_client, '_api_key') and global_doubao_async_client._api_key != api_key:
+        global_doubao_async_client = AsyncOpenAI(api_key=api_key, base_url=base_url)
+    return global_doubao_async_client
 
 # Setup LLM Configuration.
 @dataclass
@@ -468,11 +484,15 @@ async def bge_m3_embedding(model_name: str, texts: list[str]) -> np.ndarray:
     # 使用硅基流动的BAAI/bge-m3嵌入模型
     import httpx
     
+    api_key = os.environ.get('SILICONFLOW_API_KEY')
+    if not api_key:
+        raise RuntimeError("SILICONFLOW_API_KEY 未配置，无法调用 SiliconFlow embedding API。请设置环境变量 SILICONFLOW_API_KEY 或在 .env 文件中配置。")
+    
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "https://api.siliconflow.cn/v1/embeddings",
             headers={
-                "Authorization": f"Bearer {os.environ.get('SILICONFLOW_API_KEY')}",
+                "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json"
             },
             json={
@@ -504,6 +524,99 @@ deepseek_bge_config = LLMConfig(
     
     cheap_model_func_raw = deepseek_complete,
     cheap_model_name = "deepseek-chat",
+    cheap_model_max_token_size = 32768,
+    cheap_model_max_async = 16
+)
+
+###### 豆包（字节跳动）配置
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+    retry=retry_if_exception_type((RateLimitError, APIConnectionError)),
+)
+async def doubao_complete_if_cache(
+    model, prompt, system_prompt=None, history_messages=[], **kwargs
+) -> str:
+    doubao_async_client = get_doubao_async_client_instance()
+    hashing_kv: BaseKVStorage = kwargs.pop("hashing_kv", None)
+    use_cache = kwargs.pop("use_cache", True)
+
+    messages = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.extend(history_messages)
+    messages.append({"role": "user", "content": prompt})
+
+    if hashing_kv is not None and use_cache:
+        args_hash = compute_args_hash(model, messages)
+        if_cache_return = await hashing_kv.get_by_id(args_hash)
+        if if_cache_return is not None and if_cache_return["return"] is not None:
+            return if_cache_return["return"]
+
+    response = await doubao_async_client.chat.completions.create(
+        model=model, messages=messages, **kwargs
+    )
+
+    if hashing_kv is not None and use_cache:
+        await hashing_kv.upsert(
+            {args_hash: {"return": response.choices[0].message.content, "model": model}}
+        )
+        await hashing_kv.index_done_callback()
+    return response.choices[0].message.content
+
+async def doubao_complete(
+    model_name, prompt, system_prompt=None, history_messages=[], **kwargs
+) -> str:
+    return await doubao_complete_if_cache(
+        model_name,
+        prompt,
+        system_prompt=system_prompt,
+        history_messages=history_messages,
+        **kwargs,
+    )
+
+@retry(
+    stop=stop_after_attempt(5),
+    wait=wait_exponential(multiplier=1, min=4, max=10),
+    retry=retry_if_exception_type((RateLimitError, APIConnectionError)),
+)
+async def doubao_embedding(model_name: str, texts: list[str]) -> np.ndarray:
+    """豆包 embedding API 调用"""
+    # 豆包使用与 LLM 相同的 base_url，但使用不同的 API key
+    embedding_api_key = os.environ.get('EMBEDDING_API_KEY') or os.environ.get('LLM_API_KEY') or os.environ.get('DOUBAO_API_KEY', '')
+    embedding_base_url = os.environ.get('EMBEDDING_BASE_URL') or os.environ.get('LLM_BASE_URL') or os.environ.get('DOUBAO_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
+    
+    if not embedding_api_key:
+        raise RuntimeError("豆包 Embedding API Key 未配置，请设置 EMBEDDING_API_KEY 或 LLM_API_KEY 环境变量")
+    
+    # 创建临时客户端（使用 embedding 的 API key 和 base_url）
+    doubao_embedding_client = AsyncOpenAI(api_key=embedding_api_key, base_url=embedding_base_url)
+    response = await doubao_embedding_client.embeddings.create(
+        model=model_name, input=texts, encoding_format="float"
+    )
+    return np.array([dp.embedding for dp in response.data])
+
+# 豆包配置
+# 注意：embedding_model_name 和 model_name 会从环境变量动态读取，默认值如下
+_doubao_embedding_model = os.environ.get('EMBEDDING_MODEL', 'doubao-embedding-large-text-250515')
+_doubao_llm_model = os.environ.get('LLM_MODEL', 'doubao-seed-1-6-flash-250828')
+
+doubao_config = LLMConfig(
+    embedding_func_raw = doubao_embedding,
+    embedding_model_name = _doubao_embedding_model,
+    embedding_dim = 2048,  # doubao-embedding-large-text-250515 的嵌入维度是 2048
+    embedding_max_token_size = 8192,
+    embedding_batch_num = 32,
+    embedding_func_max_async = 16,
+    query_better_than_threshold = 0.2,
+    
+    best_model_func_raw = doubao_complete,
+    best_model_name = _doubao_llm_model,
+    best_model_max_token_size = 32768,
+    best_model_max_async = 16,
+    
+    cheap_model_func_raw = doubao_complete,
+    cheap_model_name = _doubao_llm_model,
     cheap_model_max_token_size = 32768,
     cheap_model_max_async = 16
 )

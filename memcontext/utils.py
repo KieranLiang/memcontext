@@ -159,54 +159,86 @@ def get_embedding(text, model_name="all-MiniLM-L6-v2", use_cache=True, **kwargs)
         if cache_key in _embedding_cache:
             return _embedding_cache[cache_key]
     
-    use_siliconflow = kwargs.pop("use_siliconflow", False)
-    siliconflow_api_key = kwargs.pop("siliconflow_api_key", os.environ.get("SILICONFLOW_API_KEY"))
-    siliconflow_model = kwargs.pop("siliconflow_model", model_name)
-    siliconflow_endpoint = kwargs.pop("siliconflow_endpoint", os.environ.get("SILICONFLOW_EMBEDDING_ENDPOINT", "https://api.siliconflow.cn/v1/embeddings"))
-    siliconflow_timeout = kwargs.pop("siliconflow_timeout", 60.0)
-
-    if use_siliconflow:
-        embedding = _call_siliconflow_embedding(
-            text,
-            model=siliconflow_model,
-            api_key=siliconflow_api_key,
-            endpoint=siliconflow_endpoint,
-            timeout=siliconflow_timeout,
-        )
-    else:
-        # --- Model Loading ---
-        model_init_key = json.dumps({"model_name": model_name, **{k:v for k,v in kwargs.items() if k not in ['batch_size', 'max_length']}}, sort_keys=True)
-        if model_init_key not in _model_cache:
-            print(f"Loading model: {model_name}...")
-            if 'bge-m3' in model_name.lower():
-                try:
-                    from FlagEmbedding import BGEM3FlagModel
-                    init_kwargs = _get_valid_kwargs(BGEM3FlagModel.__init__, kwargs)
-                    print(f"-> Using BGEM3FlagModel with init kwargs: {init_kwargs}")
-                    _model_cache[model_init_key] = BGEM3FlagModel(model_name,device='cpu', **init_kwargs)
-                except ImportError:
-                    raise ImportError("Please install FlagEmbedding: 'pip install -U FlagEmbedding' to use bge-m3 model.")
-            else: # Default handler for SentenceTransformer-based models (like Qwen, all-MiniLM, etc.)
-                try:
-                    from sentence_transformers import SentenceTransformer
-                    init_kwargs = _get_valid_kwargs(SentenceTransformer.__init__, kwargs)
-                    print(f"-> Using SentenceTransformer with init kwargs: {init_kwargs}")
-                    _model_cache[model_init_key] = SentenceTransformer(model_name,device='cpu', **(init_kwargs))
-                except ImportError:
-                    raise ImportError("Please install sentence-transformers: 'pip install -U sentence-transformers' to use this model.")
-                
-        model = _model_cache[model_init_key]
+    # 检查是否是豆包 embedding 模型（通过模型名称判断）
+    is_doubao_embedding = 'doubao' in model_name.lower() and 'embedding' in model_name.lower()
+    
+    if is_doubao_embedding:
+        # 使用豆包 embedding API
+        embedding_api_key = os.environ.get('EMBEDDING_API_KEY') or os.environ.get('LLM_API_KEY', '')
+        embedding_base_url = os.environ.get('EMBEDDING_BASE_URL') or os.environ.get('LLM_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
         
-        # --- Encoding ---
-        if 'bge-m3' in model_name.lower():
-            encode_kwargs = _get_valid_kwargs(model.encode, kwargs)
-            print(f"-> Encoding with BGEM3FlagModel using kwargs: {encode_kwargs}")
-            result = model.encode([text], **encode_kwargs)
-            embedding = result['dense_vecs'][0]
-        else: # Default to SentenceTransformer-based models
-            encode_kwargs = _get_valid_kwargs(model.encode, kwargs)
-            print(f"-> Encoding with SentenceTransformer using kwargs: {encode_kwargs}")
-            embedding = model.encode([text], **encode_kwargs)[0]
+        if not embedding_api_key:
+            raise RuntimeError("豆包 Embedding API Key 未配置，请设置 EMBEDDING_API_KEY 或 LLM_API_KEY 环境变量")
+        
+        # 使用同步方式调用（因为 get_embedding 是同步函数）
+        import requests
+        response = requests.post(
+            f"{embedding_base_url}/embeddings",
+            headers={
+                "Authorization": f"Bearer {embedding_api_key}",
+                "Content-Type": "application/json"
+            },
+            json={
+                "model": model_name,
+                "input": [text],
+                "encoding_format": "float"
+            },
+            timeout=60.0
+        )
+        response.raise_for_status()
+        result = response.json()
+        if not result.get("data"):
+            raise RuntimeError(f"豆包 embedding 返回数据为空: {result}")
+        embedding = np.array(result["data"][0]["embedding"], dtype=np.float32)
+    else:
+        # 保留原有的 siliconflow 和本地模型逻辑（向后兼容）
+        use_siliconflow = kwargs.pop("use_siliconflow", False)
+        if use_siliconflow:
+            siliconflow_api_key = kwargs.pop("siliconflow_api_key", os.environ.get("SILICONFLOW_API_KEY"))
+            siliconflow_model = kwargs.pop("siliconflow_model", model_name)
+            siliconflow_endpoint = kwargs.pop("siliconflow_endpoint", os.environ.get("SILICONFLOW_EMBEDDING_ENDPOINT", "https://api.siliconflow.cn/v1/embeddings"))
+            siliconflow_timeout = kwargs.pop("siliconflow_timeout", 60.0)
+            embedding = _call_siliconflow_embedding(
+                text,
+                model=siliconflow_model,
+                api_key=siliconflow_api_key,
+                endpoint=siliconflow_endpoint,
+                timeout=siliconflow_timeout,
+            )
+        else:
+            # --- Model Loading ---
+            model_init_key = json.dumps({"model_name": model_name, **{k:v for k,v in kwargs.items() if k not in ['batch_size', 'max_length']}}, sort_keys=True)
+            if model_init_key not in _model_cache:
+                print(f"Loading model: {model_name}...")
+                if 'bge-m3' in model_name.lower():
+                    try:
+                        from FlagEmbedding import BGEM3FlagModel
+                        init_kwargs = _get_valid_kwargs(BGEM3FlagModel.__init__, kwargs)
+                        print(f"-> Using BGEM3FlagModel with init kwargs: {init_kwargs}")
+                        _model_cache[model_init_key] = BGEM3FlagModel(model_name,device='cpu', **init_kwargs)
+                    except ImportError:
+                        raise ImportError("Please install FlagEmbedding: 'pip install -U FlagEmbedding' to use bge-m3 model.")
+                else: # Default handler for SentenceTransformer-based models (like Qwen, all-MiniLM, etc.)
+                    try:
+                        from sentence_transformers import SentenceTransformer
+                        init_kwargs = _get_valid_kwargs(SentenceTransformer.__init__, kwargs)
+                        print(f"-> Using SentenceTransformer with init kwargs: {init_kwargs}")
+                        _model_cache[model_init_key] = SentenceTransformer(model_name,device='cpu', **(init_kwargs))
+                    except ImportError:
+                        raise ImportError("Please install sentence-transformers: 'pip install -U sentence-transformers' to use this model.")
+                    
+            model = _model_cache[model_init_key]
+            
+            # --- Encoding ---
+            if 'bge-m3' in model_name.lower():
+                encode_kwargs = _get_valid_kwargs(model.encode, kwargs)
+                print(f"-> Encoding with BGEM3FlagModel using kwargs: {encode_kwargs}")
+                result = model.encode([text], **encode_kwargs)
+                embedding = result['dense_vecs'][0]
+            else: # Default to SentenceTransformer-based models
+                encode_kwargs = _get_valid_kwargs(model.encode, kwargs)
+                print(f"-> Encoding with SentenceTransformer using kwargs: {encode_kwargs}")
+                embedding = model.encode([text], **encode_kwargs)[0]
 
     if use_cache:
         cache_key = f"{model_config_key}::{hash(text)}"
