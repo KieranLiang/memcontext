@@ -13,10 +13,37 @@ import requests
 import json
 import time
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
 # 加载 .env 文件
 load_dotenv()
+
+# 自动检测项目根目录（查找包含 .env 文件的目录）
+def get_project_root():
+    """获取项目根目录"""
+    current_dir = Path(__file__).parent.absolute()
+    # 向上查找包含 .env 文件的目录
+    for parent in [current_dir] + list(current_dir.parents):
+        if (parent / '.env').exists():
+            return parent
+    # 如果找不到，使用当前脚本的父目录的父目录（假设项目结构是 memcontext-memcontext/memcontext-n8n/）
+    return current_dir.parent
+
+# 获取项目根目录和 memdemo 目录
+PROJECT_ROOT = get_project_root()
+MEMDEMO_DIR = PROJECT_ROOT / 'memdemo'
+# 默认视频文件路径（相对路径，会自动转换为绝对路径）
+DEFAULT_VIDEO_PATH = MEMDEMO_DIR / 'test1.mp4'
+
+# 将路径转换为 Windows 格式（用于 n8n JavaScript 代码）
+def path_to_js_string(path):
+    """将路径转换为 JavaScript 字符串格式（Windows 路径，双反斜杠）"""
+    abs_path = Path(path).absolute()
+    path_str = str(abs_path)
+    # 将反斜杠转义为双反斜杠，用于 JavaScript 字符串
+    # Windows 路径不允许单引号，所以不需要担心单引号转义
+    return path_str.replace('\\', '\\\\')
 
 # 配置
 N8N_URL = "http://localhost:5678"
@@ -41,6 +68,9 @@ print("=" * 60)
 print("创建视频上传和检索工作流")
 print("=" * 60)
 print(f"\n配置:")
+print(f"  项目根目录: {PROJECT_ROOT}")
+print(f"  memdemo 目录: {MEMDEMO_DIR}")
+print(f"  默认视频路径: {DEFAULT_VIDEO_PATH}")
 print(f"  n8n URL: {N8N_URL}")
 print(f"  API URL: {API_URL}")
 print(f"  Memcontext API Key: {MEMCONTEXT_API_KEY[:10]}...")
@@ -65,7 +95,7 @@ workflow_data = {
         },
         {
             "parameters": {
-                "jsCode": "// 设置视频文件路径\n// 注意：n8n 在 Docker 中运行，但 n8ndemo 服务在主机上运行（通过 host.docker.internal:5019 访问）\n// 所以需要使用 Windows 路径（主机路径），因为服务在主机上读取文件\n// 方法1: 从输入数据获取 video_path（如果手动触发时提供了）\n// 方法2: 使用默认路径（Windows 路径）\nconst inputData = $input.item.json || {};\n\n// 使用 Windows 路径（因为 n8ndemo 服务在主机上运行）\nconst videoPath = inputData.video_path || 'D:\\\\project\\\\memcontext-memcontext\\\\n8ndemo\\\\test1.mp4';\n\n// 如果路径包含引号，自动去除\nconst cleanPath = videoPath.replace(/^[\"']|[\"']$/g, '');\n\n// 验证路径格式\nif (!cleanPath || cleanPath.trim() === '') {\n  throw new Error('视频路径不能为空');\n}\n\nreturn {\n  json: {\n    file_path: cleanPath,\n    user_id: inputData.user_id || 'test_user_video',\n    agent_response: inputData.agent_response || '已上传视频并添加到记忆',\n    converter_type: inputData.converter_type || 'video',\n    query: inputData.query || '这个视频主要讲的是什么内容？'\n  }\n};"
+                "jsCode": f"// 设置视频文件路径\n// 注意：n8n 在 Docker 中运行，但 memdemo 服务在主机上运行（通过 host.docker.internal:5019 访问）\n// 所以需要使用 Windows 路径（主机路径），因为服务在主机上读取文件\n// 方法1: 从输入数据获取 video_path（如果手动触发时提供了）\n// 方法2: 使用默认路径（自动检测的项目路径）\nconst inputData = $input.item.json || {{}};\n\n// 使用 Windows 路径（因为 memdemo 服务在主机上运行）\n// 默认路径：{path_to_js_string(DEFAULT_VIDEO_PATH)}\nconst videoPath = inputData.video_path || '{path_to_js_string(DEFAULT_VIDEO_PATH)}';\n\n// 如果路径包含引号，自动去除\nconst cleanPath = videoPath.replace(/^[\\\"']|[\\\"']$/g, '');\n\n// 验证路径格式\nif (!cleanPath || cleanPath.trim() === '') {{\n  throw new Error('视频路径不能为空');\n}}\n\nreturn {{\n  json: {{\n    file_path: cleanPath,\n    user_id: inputData.user_id || 'test_user_video',\n    agent_response: inputData.agent_response || '已上传视频并添加到记忆',\n    converter_type: inputData.converter_type || 'video',\n    query: inputData.query || '这个视频主要讲的是什么内容？'\n  }}\n}};"
             },
             "id": "set_video_path",
             "name": "设置视频路径",
@@ -254,7 +284,10 @@ print("   或者在工作流执行时，在输入数据中添加 video_path 字�
 print("3. 点击 '当点击测试时' 节点，然后点击 'Execute Workflow' 执行")
 print("4. 查看 '格式化输出' 节点的结果")
 print("\n提示:")
-print("- 视频路径格式: D:\\\\project\\\\memcontext-memcontext\\\\test_video.mp4")
-print("- 或者使用正斜杠: D:/project/memcontext-memcontext/test_video.mp4")
+print(f"- 默认视频路径: {DEFAULT_VIDEO_PATH}")
+print(f"- 项目根目录: {PROJECT_ROOT}")
+print("- 视频路径格式示例（Windows）: D:\\\\project\\\\memcontext-memcontext\\\\memdemo\\\\test1.mp4")
+print("- 或者使用正斜杠: D:/project/memcontext-memcontext/memdemo/test1.mp4")
 print("- 如果路径包含空格，不需要加引号，n8n 会自动处理")
+print("- 可以在工作流执行时，通过输入数据中的 video_path 字段指定其他视频路径")
 
