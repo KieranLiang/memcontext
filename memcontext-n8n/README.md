@@ -53,7 +53,7 @@
 
 **简单说明**：这是一个记忆管理 API 服务，运行在你的本地机器上，n8n 工作流通过 HTTP 请求调用它。
 
-#### 1. memdemo/app.py 服务
+#### 1. memcontext-n8n/app.py 服务
 
 **运行位置**：你的本地机器上，监听端口 5019
 
@@ -64,7 +64,7 @@
 
 **启动方式**：
 ```bash
-cd memdemo
+cd memcontext-n8n
 python app.py
 ```
 
@@ -97,7 +97,7 @@ python app.py
                     │ HTTP 请求
                     ▼
 ┌─────────────────────────────────────────────────────────┐
-│  memdemo/app.py (本地运行)                             │
+│  memcontext-n8n/app.py (本地运行)                             │
 │  - 运行在你的机器上                                      │
 │  - 端口: 5019                                           │
 │  - 接收 HTTP 请求                                        │
@@ -250,8 +250,8 @@ dir
 
 **应该看到类似**：
 ```
-memdemo/
 memcontext-n8n/
+  - app.py
   - create_video_workflow.py
   - create_video_workflow.bat
   - docker-run-n8n.bat
@@ -268,7 +268,7 @@ README.md
 
 ### 1.3 确认当前目录
 
-**重要**：后续所有操作都在项目**根目录**进行（不是 memdemo 目录）
+**重要**：后续所有操作都在项目**根目录**进行（不是 memcontext-n8n 目录）
 
 **验证方法**：
 ```bash
@@ -298,9 +298,9 @@ cd <项目根目录路径>
    dir requirements.txt
    ```
 
-2. 或者使用 memdemo 目录的 `requirements.txt`（仅包含 memdemo 需要的依赖）：
+2. 或者使用 memcontext-n8n 目录的 `requirements.txt`（仅包含 memcontext-n8n 需要的依赖）：
    ```bash
-   dir memdemo\requirements.txt
+   dir memcontext-n8n\requirements.txt
    ```
 
 ### 2.2 安装项目依赖
@@ -312,11 +312,11 @@ cd <项目根目录路径>
 pip install -r requirements.txt
 ```
 
-**方法2：使用 memdemo 目录的 requirements.txt（仅 memdemo 依赖）**
+**方法2：使用 memcontext-n8n 目录的 requirements.txt（仅 memcontext-n8n 依赖）**
 
-如果你只需要运行 memdemo，可以使用精简版：
+如果你只需要运行 memcontext-n8n，可以使用精简版：
 ```bash
-pip install -r memdemo/requirements.txt
+pip install -r memcontext-n8n/requirements.txt
 ```
 
 **注意**：使用方式2后，还需要安装 memcontext 包（见 2.3）
@@ -363,7 +363,7 @@ pip install openai typing-extensions regex
 pip install flask python-dotenv requests numpy sentence-transformers transformers FlagEmbedding faiss-cpu openai typing-extensions regex
 ```
 
-**注意**：这些是运行 memdemo 服务所需的核心依赖。如果使用 conda 环境，建议使用 conda 安装部分包：
+**注意**：这些是运行 memcontext-n8n 服务所需的核心依赖。如果使用 conda 环境，建议使用 conda 安装部分包：
 ```bash
 conda install numpy -y
 pip install flask python-dotenv requests sentence-transformers transformers FlagEmbedding faiss-cpu openai typing-extensions regex
@@ -396,7 +396,7 @@ memcontext 安装成功
 
 ### 3.1 创建 .env 文件
 
-**重要**：`.env` 文件必须在项目**根目录**（不是 memdemo 目录）
+**重要**：`.env` 文件必须在项目**根目录**（不是 memcontext-n8n 目录）
 
 #### Windows 用户创建方法
 
@@ -434,7 +434,7 @@ dir .env
 # ============================================
 # n8n API Key 配置（必需）
 # ============================================
-# 用于访问 memdemo 服务的 API Key
+# 用于访问 memcontext-n8n 服务的 API Key
 # 可以设置任意字符串，建议使用随机字符串
 # 多个 Key 用逗号分隔
 N8N_API_KEYS=my-secret-key-12345
@@ -477,7 +477,7 @@ SILICONFLOW_API_KEY=your-siliconflow-api-key-here
 
 #### N8N_API_KEYS（必需）
 
-**作用**：这是访问 memdemo 服务的密钥，用于身份验证
+**作用**：这是访问 memcontext-n8n 服务的密钥，用于身份验证
 
 **设置方法**：
 ```env
@@ -551,11 +551,11 @@ LLM_API_KEY: sk-xxxxxxx
 
 ## 第四步：启动服务
 
-### 4.1 进入 memdemo 目录
+### 4.1 进入 memcontext-n8n 目录
 
 **步骤**：
 ```bash
-cd memdemo
+cd memcontext-n8n
 ```
 
 **验证**：
@@ -565,15 +565,15 @@ cd
 
 **应该显示**：
 ```
-<你的项目根目录路径>\memdemo
+<你的项目根目录路径>\memcontext-n8n
 ```
-例如：`C:\Users\YourName\Projects\memcontext-memcontext\memdemo`
+例如：`C:\Users\YourName\Projects\memcontext-memcontext\memcontext-n8n`
 
 ### 4.2 启动服务
 
 **启动命令**：
 ```bash
-cd memdemo
+cd memcontext-n8n
 python app.py
 ```
 
@@ -701,7 +701,7 @@ netstat -ano | findstr :5019
                         │ (localhost:5019)
                         ▼
         ┌───────────────────────────────┐
-        │   memdemo 记忆管理服务         │
+        │   memcontext-n8n 记忆管理服务  │
         │   (主机上运行)                 │
         │   http://localhost:5019       │
         │                                │
@@ -723,7 +723,7 @@ netstat -ano | findstr :5019
         │              ▼                 │
         │  ┌──────────────────────────┐ │
         │  │  数据存储                 │ │
-        │  │  memdemo/data/            │ │
+        │  │  memcontext-n8n/data/    │ │
         │  └──────────────────────────┘ │
         └────────────────────────────────┘
                         │
@@ -761,7 +761,8 @@ netstat -ano | findstr :5019
          │ }
          ▼
 ┌─────────────────┐
-│  memdemo 服务   │  处理请求
+│  memcontext-n8n │  处理请求
+│  服务           │
 │  /api/memory/   │
 │  search         │
 └────────┬────────┘
@@ -809,7 +810,8 @@ netstat -ano | findstr :5019
          │ }
          ▼
 ┌─────────────────┐
-│  memdemo 服务   │  处理请求
+│  memcontext-n8n │  处理请求
+│  服务           │
 │  /api/memory/   │
 │  add            │
 └────────┬────────┘
@@ -819,7 +821,7 @@ netstat -ano | findstr :5019
          │ 3. 生成嵌入向量
          ▼
 ┌─────────────────┐
-│  记忆存储       │  memdemo/data/users/user123/
+│  记忆存储       │  memcontext-n8n/data/users/user123/
 │                 │  - short_term.json
 │                 │  - mid_term.json
 └────────┬────────┘
@@ -861,7 +863,8 @@ netstat -ano | findstr :5019
          │ }
          ▼
 ┌─────────────────┐
-│  memdemo 服务   │  处理视频
+│  memcontext-n8n │  处理视频
+│  服务           │
 │  /api/memory/   │
 │  add_multimodal │
 └────────┬────────┘
@@ -951,7 +954,7 @@ netstat -ano | findstr :5019
                           │ Authorization: Bearer <key>
                           ▼
 ┌─────────────────────────────────────┐
-│      memdemo 服务 (Flask)           │
+│      memcontext-n8n 服务 (Flask)           │
 │                                     │
 │  ┌──────────────────────────────┐  │
 │  │  API 路由处理                │  │
@@ -1168,7 +1171,7 @@ cd memcontext-n8n
 python create_video_workflow.py
 ```
 
-**注意**：脚本会自动检测项目根目录和 memdemo 目录，无需手动配置路径。
+**注意**：脚本会自动检测项目根目录和 memcontext-n8n 目录，无需手动配置路径。
 
 **步骤2：脚本会自动**：
 - ✅ 创建工作流
@@ -1191,7 +1194,7 @@ python create_video_workflow.py
 
 ### 测试前准备
 
-1. ✅ **确保 memdemo 服务正在运行**
+1. ✅ **确保 memcontext-n8n 服务正在运行**
    ```bash
    # 检查服务是否运行
    netstat -ano | findstr :5019
@@ -1276,7 +1279,7 @@ pip install -r requirements.txt
 **原因**：`.env` 文件配置不正确或未加载
 
 **解决方法**：
-1. 检查 `.env` 文件是否在项目**根目录**（不是 memdemo 目录）
+1. 检查 `.env` 文件是否在项目**根目录**（不是 memcontext-n8n 目录）
 2. 检查 `.env` 文件中的 `LLM_API_KEY` 是否正确填写
 3. 确保 `.env` 文件格式正确（没有多余的空格或引号）
 4. 重启服务
@@ -1301,7 +1304,7 @@ OSError: [WinError 10048] 通常每个套接字地址(协议/网络地址/端口
 
 ### 网络连接问题
 
-#### Q4: n8n 无法连接到 memdemo 服务
+#### Q4: n8n 无法连接到 memcontext-n8n 服务
 
 **错误信息**：
 ```
@@ -1310,7 +1313,7 @@ Connection refused
 ```
 
 **解决方法**：
-1. **确保 memdemo 服务正在运行**：
+1. **确保 memcontext-n8n 服务正在运行**：
    ```bash
    netstat -ano | findstr :5019
    ```
@@ -1361,8 +1364,8 @@ Connection refused
 **原因**：路径格式错误或文件不存在
 
 **解决方法**：
-1. 使用**绝对路径**，例如：`C:\\Users\\YourName\\Projects\\memcontext-memcontext\\memdemo\\test1.mp4`
-   - 或者使用相对路径（相对于项目根目录）：`memdemo\\test1.mp4`
+1. 使用**绝对路径**，例如：`C:\\Users\\YourName\\Projects\\memcontext-memcontext\\memcontext-n8n\\test1.mp4`
+   - 或者使用相对路径（相对于项目根目录）：`memcontext-n8n\\test1.mp4`
 2. Windows 路径使用双反斜杠 `\\` 或正斜杠 `/`
 3. 确保文件确实存在
 4. 注意：脚本会自动检测项目路径，建议使用相对路径或让脚本自动生成路径

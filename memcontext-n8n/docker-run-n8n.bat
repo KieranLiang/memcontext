@@ -1,7 +1,7 @@
 @echo off
 chcp 65001 >nul
-REM Docker 运行 n8n，挂载本地 memdemo 目录
-REM 这样 Docker 中的 n8n 可以访问本地的 memdemo 文件夹
+REM Docker 运行 n8n，挂载本地 memcontext-n8n 目录
+REM 这样 Docker 中的 n8n 可以访问本地的 memcontext-n8n 文件夹
 
 echo 正在检查 Docker 状态...
 docker ps >nul 2>&1
@@ -48,20 +48,20 @@ echo.
 echo ========================================
 echo 挂载配置：
 echo ========================================
-echo 本地路径: %CD%\memdemo
-echo 容器路径: /home/node/memdemo
+echo 本地路径: %CD%\memcontext-n8n
+echo 容器路径: /home/node/memcontext-n8n
 echo.
 echo 说明：
 echo - 容器端口: 5678 (n8n Web UI)
-echo - 本地 memdemo 目录已挂载到容器的 /home/node/memdemo
-echo - 容器可以通过 host.docker.internal:5019 访问本地 memdemo 服务
+echo - 本地 memcontext-n8n 目录已挂载到容器的 /home/node/memcontext-n8n
+echo - 容器可以通过 host.docker.internal:5019 访问本地 memcontext-n8n 服务
 echo ========================================
 echo.
 
 docker run -it --rm ^
   --name n8n ^
   -p 5678:5678 ^
-  -v "%CD%\memdemo":/home/node/memdemo ^
+  -v "%CD%\memcontext-n8n":/home/node/memcontext-n8n ^
   -e N8N_BASIC_AUTH_ACTIVE=true ^
   -e N8N_BASIC_AUTH_USER=admin ^
   -e N8N_BASIC_AUTH_PASSWORD=admin ^
