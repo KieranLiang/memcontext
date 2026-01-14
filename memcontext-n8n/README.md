@@ -1,6 +1,8 @@
+<div align="center">
+
 # MemContext n8n Plugin
 
-<div align="center">
+
 
 **Multimodal Agent Memory Service for n8n Workflows**
 
