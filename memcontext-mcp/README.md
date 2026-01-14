@@ -1,14 +1,40 @@
-# MemoryOS MCP 服务器部署指南
+# Memcontext MCP 服务器部署指南
 
 Memcontext MCP 服务器是一个基于 Model Context Protocol (MCP) 的智能记忆系统，为 Cursor 和 Claude Desktop 等编辑器提供记忆管理功能。
 
+## ⚡ 快速开始
+
+如果您想快速体验 Memcontext，可以按照以下步骤操作：
+
+1. **安装依赖**：
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. **配置 `config.json`**：
+   - 设置您的 `user_id` 和 `openai_api_key`
+   - 其他参数可以使用默认值
+
+3. **部署到编辑器**：
+   - **Cursor**: 运行 `python setup_cursor.py`
+   - **Claude Desktop和Claude Code CLI**: 运行 `python setup_claude_desktop.py`
+
+4. **重启编辑器并开始使用**：
+   - 重启后，AI 助手会自动使用记忆系统
+   - 或者手动使用：`请使用 Memcontext 保存这条对话`
+
+详细说明请继续阅读下面的章节。
+
 ## 📋 目录
 
+- [快速开始](#快速开始)
 - [环境要求](#环境要求)
 - [安装步骤](#安装步骤)
 - [配置说明](#配置说明)
 - [部署到不同平台](#部署到不同平台)
 - [使用方法](#使用方法)
+- [记忆系统架构：短中长记忆详解](#记忆系统架构短中长记忆详解)
+- [自动记忆管理 (Skill)](#自动记忆管理-skill)
 - [测试](#测试)
 - [故障排除](#故障排除)
 
@@ -65,7 +91,7 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. 配置 MemoryOS
+### 4. 配置 Memcontext
 
 编辑 `config.json` 文件，设置以下必需参数：
 
@@ -89,15 +115,19 @@ pip install -r requirements.txt
 
 **配置参数说明：**
 
-- `user_id`: 用户唯一标识符
-- `openai_api_key`: OpenAI API 密钥（或兼容 API 的密钥）
-- `openai_base_url`: API 基础 URL（可选，默认 OpenAI）
-- `data_storage_path`: 数据存储路径（相对或绝对路径）
-- `assistant_id`: 助手标识符
-- `short_term_capacity`: 短期记忆容量
-- `mid_term_capacity`: 中期记忆容量
+- `user_id`: 用户唯一标识符（必需）
+- `openai_api_key`: OpenAI API 密钥（或兼容 API 的密钥，必需）
+- `openai_base_url`: API 基础 URL（可选，默认 `https://api.openai.com/v1`）
+- `data_storage_path`: 数据存储路径（相对或绝对路径，建议使用绝对路径）
+- `assistant_id`: 助手标识符（可选，默认 `memcontext_assistant`）
+- `short_term_capacity`: 短期记忆容量（默认 10，存储最近的对话对）
+- `mid_term_capacity`: 中期记忆容量（默认 2000，存储历史对话页面）
 - `embedding_model_name`: 嵌入模型名称（支持 `BAAI/bge-m3`, `all-MiniLM-L6-v2` 等）
-- `llm_model`: 使用的 LLM 模型名称
+- `long_term_knowledge_capacity`: 长期知识库容量（默认 100，存储用户和助手的知识条目）
+- `retrieval_queue_capacity`: 检索队列容量（默认 7，控制检索时的上下文数量）
+- `mid_term_heat_threshold`: 中期记忆热度阈值（默认 7.0，用于判断记忆的重要性）
+- `mid_term_similarity_threshold`: 中期记忆相似度阈值（默认 0.6，用于去重和合并）
+- `llm_model`: 使用的 LLM 模型名称（默认 `gpt-4o-mini`，用于知识提取和总结）
 
 ## 🚀 部署到不同平台
 
@@ -152,6 +182,30 @@ python setup_claude_desktop.py
    请列出所有可用的 MCP 工具
    ```
 
+### 部署到 Claude Code CLI
+
+1. **运行配置脚本**：
+ 
+```bash
+python setup_claude_desktop.py
+```
+
+脚本会自动：
+- 检测操作系统类型
+- 找到 Claude Code CLI 配置文件位置
+- 备份现有配置
+- 更新配置文件
+
+2. **重启 Claude Code CLI**：
+   - 完全关闭 Claude Code CLI
+   - 重新启动
+
+3. **验证安装**：
+   在 Claude Code CLI 中询问：
+   ```
+   请列出所有可用的 MCP 工具
+   ```
+
 ## 💻 使用方法
 
 ### 在编辑器中使用
@@ -168,7 +222,7 @@ python setup_claude_desktop.py
 
 或简单说：
 ```
-请使用 MemoryOS 保存这条对话
+请使用 Memcontext 保存这条对话
 ```
 
 #### 2. 检索记忆
@@ -179,13 +233,39 @@ python setup_claude_desktop.py
 
 或：
 ```
-请从 MemoryOS 检索关于编程语言的记忆
+请从 Memcontext 检索关于编程语言的记忆
 ```
 
 #### 3. 获取用户画像
 
 ```
 请使用 get_user_profile 工具获取我的用户画像
+```
+
+### 使用场景示例
+
+#### 场景 1: 保存项目信息
+```
+用户: 我正在开发一个 Python Web 应用，使用 Flask 框架
+AI: [自动保存] 已记录您的项目信息
+```
+
+#### 场景 2: 记住用户偏好
+```
+用户: 我不喜欢吃香菜
+AI: [自动保存] 已记录您的饮食偏好
+```
+
+#### 场景 3: 检索历史对话
+```
+用户: 我之前提到过什么项目？
+AI: [自动检索] 根据记忆，您之前提到正在开发一个 Python Web 应用...
+```
+
+#### 场景 4: 获取用户画像
+```
+用户: 总结一下我的信息
+AI: [调用 get_user_profile] 根据您的记忆，您是一位 Python 开发者...
 ```
 
 ### 工具参数说明
@@ -206,6 +286,61 @@ python setup_claude_desktop.py
 - `include_knowledge` (可选): 是否包含用户知识，默认 `True`
 - `include_assistant_knowledge` (可选): 是否包含助手知识，默认 `False`
 
+
+## 🤖 自动记忆管理 (Skill)
+
+为了让 AI 助手能够**自动**使用记忆系统（无需用户显式调用工具），我们提供了一个 Skill 定义文件。
+
+### 什么是 Skill？
+
+`SKILL.md` 文件定义了 "Memory Manager (Memcontext Auto-Pilot)" 技能，它指导 AI 助手：
+- **自动检索**历史记忆（在回答前）
+- **自动保存**重要信息（在回答后）
+- 让对话具备连续性，而不是每次都是新开始
+
+### 如何使用 Skill？
+
+1. **在 Cursor 中使用**：
+   - 将 `SKILL.md` 文件的内容复制到 Cursor 的自定义指令（Custom Instructions）中
+   - 或者在对话中引用该文件：`@SKILL.md`
+
+2. **在 Claude Desktop 中使用**：
+   - 将 `SKILL.md` 的内容添加到 Claude Desktop 的系统提示词中
+   - 或者作为对话上下文引用
+
+3. **在 Claude Code 中使用**：
+   - **方法一（推荐）**：手动复制到技能目录
+     
+     将 `skills/memory_manager` 目录复制到 Claude Code 的技能目录：
+     ```bash
+     # Windows (PowerShell)
+     $CLAUDE_SKILLS = "$env:USERPROFILE\.claude\skills"
+     New-Item -ItemType Directory -Path $CLAUDE_SKILLS -Force | Out-Null
+     Copy-Item -Path "memcontext-mcp\skills\memory_manager" -Destination "$CLAUDE_SKILLS\memory_manager" -Recurse -Force
+     
+     # macOS/Linux
+     CLAUDE_SKILLS="$HOME/.claude/skills"
+     mkdir -p "$CLAUDE_SKILLS"
+     cp -r memcontext-mcp/skills/memory_manager "$CLAUDE_SKILLS/memory_manager"
+     ```
+     
+     然后在 Claude Code 中使用 `/reload-skills` 命令重新加载技能，或者重启 Claude Code。
+   
+   - **方法二**：在对话中临时引用（不推荐，每次都需要引用）
+     ```
+     @skills/memory_manager/SKILL.md 请按照这个技能定义来工作
+     ```
+     
+   > **注意**：确保技能目录结构正确，`SKILL.md` 文件必须在 `memory_manager` 子目录中，而不是直接在 `skills` 目录下。
+
+4. **工作流程**：
+   Skill 定义了 "查-回-存" 三步法：
+   - **Step 1**: 自动检索相关记忆
+   - **Step 2**: 结合记忆生成回答
+   - **Step 3**: 自动保存有价值的信息
+
+详细说明请查看 [SKILL.md](./SKILL.md) 文件。
+
 ## 🧪 测试
 
 ### 运行测试脚本
@@ -215,7 +350,7 @@ python test_simple.py
 ```
 
 测试脚本会验证：
-1. MemoryOS 初始化
+1. Memcontext 初始化
 2. `add_memory` 工具功能
 3. `retrieve_memory` 工具功能
 4. `get_user_profile` 工具功能
@@ -242,7 +377,7 @@ python server_new.py --config config.json
 
 ### 问题 2: 初始化失败
 
-**症状**: 服务器启动时提示 MemoryOS 初始化失败
+**症状**: 服务器启动时提示 Memcontext 初始化失败
 
 **解决方案**:
 1. 检查 `config.json` 文件格式是否正确
@@ -280,6 +415,24 @@ python server_new.py --config config.json
 2. 手动下载模型到本地，修改 `embedding_model_name` 为本地路径
 3. 使用较小的模型（如 `all-MiniLM-L6-v2`）
 
+### 问题 6: 记忆检索不准确
+
+**症状**: 检索到的记忆与查询不相关
+
+**解决方案**:
+1. 检查 `embedding_model_name` 是否正确
+2. 调整 `mid_term_similarity_threshold` 参数（降低值可提高召回率）
+3. 确保记忆已正确保存（检查 `memcontext_data` 目录）
+
+### 问题 7: 数据目录权限问题
+
+**症状**: 无法写入数据目录
+
+**解决方案**:
+1. 检查 `data_storage_path` 目录是否存在
+2. 确保目录有写入权限
+3. 使用绝对路径而不是相对路径
+
 ## 📝 配置文件示例
 
 ### 完整配置示例
@@ -302,6 +455,8 @@ python server_new.py --config config.json
 }
 ```
 
+> ⚠️ **安全提示**: 请勿将包含真实 API 密钥的配置文件提交到公共代码仓库。建议使用环境变量或配置文件排除在版本控制之外。
+
 ### MCP 配置示例（自动生成）
 
 **Cursor** (`~/.cursor/mcp.json`):
@@ -321,6 +476,8 @@ python server_new.py --config config.json
 }
 ```
 
+> 💡 **提示**: 上述路径为示例，实际使用时配置脚本会自动检测并设置正确的路径。
+
 **Claude Desktop** (`%APPDATA%\Claude\claude_desktop_config.json`):
 ```json
 {
@@ -338,16 +495,18 @@ python server_new.py --config config.json
 }
 ```
 
+> 💡 **提示**: 上述路径为示例，实际使用时配置脚本会自动检测并设置正确的路径。
+
 ## 🔄 更新配置
 
 如果需要更新配置：
 
-1. **更新 MemoryOS 配置**：直接编辑 `config.json`
+1. **更新 Memcontext 配置**：直接编辑 `config.json`
 2. **更新 MCP 服务器路径**：重新运行对应的 `setup_*.py` 脚本
 
 ## 📚 相关资源
 
-- MemoryOS 项目主页
+- Memcontext 项目主页
 - MCP 协议文档
 - 支持的嵌入模型列表
 
@@ -368,5 +527,4 @@ python server_new.py --config config.json
 
 ---
 
-**最后更新**: 2026-01-07
-
+**最后更新**: 2026-01-14
