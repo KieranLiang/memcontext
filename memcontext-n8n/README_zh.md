@@ -9,6 +9,7 @@
 [![n8n](https://img.shields.io/badge/n8n-Compatible-green.svg)](https://n8n.io/)
 
 *让您的 n8n 工作流拥有持久化记忆能力，支持文本、视频、音频、图像等多种模态*
+</div>
 
 ---
 

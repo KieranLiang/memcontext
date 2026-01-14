@@ -4,7 +4,11 @@
 
 **Multimodal Agent Memory Service for n8n Workflows**
 
-Empower your n8n workflows with persistent memory capabilities, supporting text, video, audio, images, and other modalities.
+[![Python](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+[![n8n](https://img.shields.io/badge/n8n-Compatible-green.svg)](https://n8n.io/)
+
+*Empower your n8n workflows with persistent memory capabilities, supporting text, video, audio, images, and other modalities.*
 
 </div>
 
