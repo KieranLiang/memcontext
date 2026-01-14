@@ -1,38 +1,41 @@
 @echo off
 chcp 65001 >nul
 echo ========================================
-echo 创建视频上传和检索工作流
+echo Create Video Upload and Retrieval Workflow
 echo ========================================
 echo.
 
-REM 检查 Python
+REM Switch to script directory
+cd /d "%~dp0"
+
+REM Check Python
 python --version >nul 2>&1
 if errorlevel 1 (
-    echo [错误] 未找到 Python，请先安装 Python
+    echo [ERROR] Python not found, please install Python first
     pause
     exit /b 1
 )
 
-REM 检查 .env 文件
-if not exist .env (
-    echo [警告] 未找到 .env 文件
-    echo 将使用默认配置
+REM Check .env file (in project root directory)
+if not exist ..\.env (
+    echo [WARNING] .env file not found (in project root directory)
+    echo Will use default configuration
     echo.
 )
 
-REM 运行脚本
-python 创建视频上传工作流.py
+REM Run script
+python create_video_workflow.py
 
 if errorlevel 1 (
     echo.
-    echo [错误] 脚本执行失败
+    echo [ERROR] Script execution failed
     pause
     exit /b 1
 )
 
 echo.
 echo ========================================
-echo 完成！
+echo Done!
 echo ========================================
 pause
 

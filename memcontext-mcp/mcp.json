@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "memcontext": {
+      "command": "D:/anaconda3/python.exe",
+      "args": [
+        "D:/project/memcontext-memcontext/memcontext-mcp/server_new.py",
+        "--config",
+        "D:/project/memcontext-memcontext/memcontext-mcp/config.json"
+      ],
+      "env": {},
+      "description": "Memcontext MCP Server - 智能记忆系统，提供记忆添加、检索和用户画像功能"
+    }
+  }
+} 

@@ -1,36 +1,63 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-创建支持视频上传和检索的 n8n 工作流
-工作流包含：
-1. 手动触发（可输入视频文件路径）
-2. 添加视频记忆（multimodal）
-3. 搜索记忆
-4. 输出结果
+Create n8n workflow for video upload and retrieval
+Workflow includes:
+1. Manual trigger (can input video file path)
+2. Add video memory (multimodal)
+3. Search memory
+4. Output results
 """
 
 import requests
 import json
 import time
 import os
+from pathlib import Path
 from dotenv import load_dotenv
 
-# 加载 .env 文件
+# Load .env file
 load_dotenv()
 
-# 配置
+# Auto-detect project root directory (find directory containing .env file)
+def get_project_root():
+    """Get project root directory"""
+    current_dir = Path(__file__).parent.absolute()
+    # Search upward for directory containing .env file
+    for parent in [current_dir] + list(current_dir.parents):
+        if (parent / '.env').exists():
+            return parent
+    # If not found, use parent directory of current script's parent (assuming project structure is memcontext-memcontext/memcontext-n8n/)
+    return current_dir.parent
+
+# Get project root directory and memcontext-n8n directory
+PROJECT_ROOT = get_project_root()
+MEMCONTEXT_N8N_DIR = PROJECT_ROOT / 'memcontext-n8n'
+# Default video file path (relative path, will be automatically converted to absolute path)
+DEFAULT_VIDEO_PATH = MEMCONTEXT_N8N_DIR / 'test1.mp4'
+
+# Convert path to Windows format (for n8n JavaScript code)
+def path_to_js_string(path):
+    """Convert path to JavaScript string format (Windows path, double backslashes)"""
+    abs_path = Path(path).absolute()
+    path_str = str(abs_path)
+    # Escape backslashes to double backslashes for JavaScript strings
+    # Windows paths don't allow single quotes, so no need to worry about quote escaping
+    return path_str.replace('\\', '\\\\')
+
+# Configuration
 N8N_URL = "http://localhost:5678"
 N8N_USER = "admin"
 N8N_PASS = "admin"
 API_URL = "http://host.docker.internal:5019"
 
-# 读取 n8n API Key（用于调用 n8n API）
+# Read n8n API Key (for calling n8n API)
 N8N_API_KEY = os.environ.get("N8N_API_KEY", "").strip()
-# 清理可能的换行符和多余空格
+# Clean possible newlines and extra spaces
 if N8N_API_KEY:
     N8N_API_KEY = N8N_API_KEY.replace('\n', '').replace('\r', '').strip()
 
-# 读取 memcontext API Key（用于调用 memcontext API）
+# Read memcontext API Key (for calling memcontext API)
 api_keys_str = os.environ.get("N8N_API_KEYS", "").strip()
 if api_keys_str:
     MEMCONTEXT_API_KEY = api_keys_str.split(',')[0].strip()
@@ -38,37 +65,40 @@ else:
     MEMCONTEXT_API_KEY = os.environ.get("N8N_API_KEY", "test-key")
 
 print("=" * 60)
-print("创建视频上传和检索工作流")
+print("Create Video Upload and Retrieval Workflow")
 print("=" * 60)
-print(f"\n配置:")
+print(f"\nConfiguration:")
+print(f"  Project root: {PROJECT_ROOT}")
+print(f"  memcontext-n8n directory: {MEMCONTEXT_N8N_DIR}")
+print(f"  Default video path: {DEFAULT_VIDEO_PATH}")
 print(f"  n8n URL: {N8N_URL}")
 print(f"  API URL: {API_URL}")
 print(f"  Memcontext API Key: {MEMCONTEXT_API_KEY[:10]}...")
 if N8N_API_KEY:
-    print(f"  n8n API Key: {N8N_API_KEY[:20]}... (已配置，长度: {len(N8N_API_KEY)})")
+    print(f"  n8n API Key: {N8N_API_KEY[:20]}... (configured, length: {len(N8N_API_KEY)})")
 else:
-    print(f"  n8n API Key: 未配置，将使用 Basic Auth")
+    print(f"  n8n API Key: not configured, will use Basic Auth")
 print()
 
-# 创建工作流
-print("[1/4] 创建工作流...")
+# Create workflow
+print("[1/4] Creating workflow...")
 workflow_data = {
-    "name": "视频上传和检索工作流",
+    "name": "Video Upload and Retrieval Workflow",
     "nodes": [
         {
             "parameters": {},
             "id": "start",
-            "name": "当点击测试时",
+            "name": "When clicking test",
             "type": "n8n-nodes-base.manualTrigger",
             "typeVersion": 1,
             "position": [250, 300]
         },
         {
             "parameters": {
-                "jsCode": "// 设置视频文件路径\n// 注意：n8n 在 Docker 中运行，但 n8ndemo 服务在主机上运行（通过 host.docker.internal:5019 访问）\n// 所以需要使用 Windows 路径（主机路径），因为服务在主机上读取文件\n// 方法1: 从输入数据获取 video_path（如果手动触发时提供了）\n// 方法2: 使用默认路径（Windows 路径）\nconst inputData = $input.item.json || {};\n\n// 使用 Windows 路径（因为 n8ndemo 服务在主机上运行）\nconst videoPath = inputData.video_path || 'D:\\\\project\\\\memcontext-memcontext\\\\n8ndemo\\\\test1.mp4';\n\n// 如果路径包含引号，自动去除\nconst cleanPath = videoPath.replace(/^[\"']|[\"']$/g, '');\n\n// 验证路径格式\nif (!cleanPath || cleanPath.trim() === '') {\n  throw new Error('视频路径不能为空');\n}\n\nreturn {\n  json: {\n    file_path: cleanPath,\n    user_id: inputData.user_id || 'test_user_video',\n    agent_response: inputData.agent_response || '已上传视频并添加到记忆',\n    converter_type: inputData.converter_type || 'video',\n    query: inputData.query || '这个视频主要讲的是什么内容？'\n  }\n};"
+                "jsCode": f"// Set video file path\n// Note: n8n runs in Docker, but memcontext-n8n service runs on host (accessed via host.docker.internal:5019)\n// So we need to use Windows path (host path) because the service reads files on the host\n// Method 1: Get video_path from input data (if provided when manually triggered)\n// Method 2: Use default path (auto-detected project path)\nconst inputData = $input.item.json || {{}};\n\n// Use Windows path (because memcontext-n8n service runs on host)\n// Default path: {path_to_js_string(DEFAULT_VIDEO_PATH)}\nconst videoPath = inputData.video_path || '{path_to_js_string(DEFAULT_VIDEO_PATH)}';\n\n// Remove quotes if path contains them\nconst cleanPath = videoPath.replace(/^[\\\"']|[\\\"']$/g, '');\n\n// Validate path format\nif (!cleanPath || cleanPath.trim() === '') {{\n  throw new Error('Video path cannot be empty');\n}}\n\nreturn {{\n  json: {{\n    file_path: cleanPath,\n    user_id: inputData.user_id || 'test_user_video',\n    agent_response: inputData.agent_response || 'Video uploaded and added to memory',\n    converter_type: inputData.converter_type || 'video',\n    query: inputData.query || 'What is the main content of this video?'\n  }}\n}};"
             },
             "id": "set_video_path",
-            "name": "设置视频路径",
+            "name": "Set Video Path",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [450, 300]
@@ -109,7 +139,7 @@ workflow_data = {
                 }
             },
             "id": "add_video_memory",
-            "name": "添加视频记忆",
+            "name": "Add Video Memory",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [650, 300]
@@ -133,61 +163,61 @@ workflow_data = {
                 },
                 "sendBody": True,
                 "specifyBody": "json",
-                "jsonBody": "={{ JSON.stringify({\n  user_id: $('设置视频路径').item.json.user_id,\n  query: $('设置视频路径').item.json.query || '这个视频主要讲的是什么内容？',\n  relationship_with_user: 'friend',\n  style_hint: '友好'\n}) }}",
+                "jsonBody": "={{ JSON.stringify({\n  user_id: $('Set Video Path').item.json.user_id,\n  query: $('Set Video Path').item.json.query || 'What is the main content of this video?',\n  relationship_with_user: 'friend',\n  style_hint: 'friendly'\n}) }}",
                 "options": {}
             },
             "id": "search_memory",
-            "name": "搜索记忆",
+            "name": "Search Memory",
             "type": "n8n-nodes-base.httpRequest",
             "typeVersion": 4.1,
             "position": [850, 300]
         },
         {
             "parameters": {
-                "jsCode": "// 格式化输出结果\nconst addResult = $('添加视频记忆').item.json || {};\nconst searchResult = $('搜索记忆').item.json || {};\n\n// 提取关键信息\nconst uploadSuccess = addResult.code === 200 || addResult.code === undefined;\nconst searchSuccess = searchResult.code === 200 || searchResult.code === undefined;\n\nreturn {\n  json: {\n    video_upload: {\n      success: uploadSuccess,\n      message: addResult.message || '视频处理完成',\n      data: addResult.data || addResult,\n      ingested_rounds: addResult.data?.ingested_rounds || 0,\n      file_id: addResult.data?.file_id || null\n    },\n    memory_search: {\n      success: searchSuccess,\n      message: searchResult.message || '搜索完成',\n      response: searchResult.data?.response || searchResult.response || '未找到相关记忆',\n      timestamp: searchResult.data?.timestamp || null\n    },\n    summary: {\n      video_processed: uploadSuccess ? '成功' : '失败',\n      memory_found: searchSuccess && (searchResult.data?.response || searchResult.response) ? '是' : '否',\n      answer: searchResult.data?.response || searchResult.response || '未找到相关记忆',\n      chunks_ingested: addResult.data?.ingested_rounds || 0\n    }\n  }\n};"
+                "jsCode": "// Format output results\nconst addResult = $('Add Video Memory').item.json || {};\nconst searchResult = $('Search Memory').item.json || {};\n\n// Extract key information\nconst uploadSuccess = addResult.code === 200 || addResult.code === undefined;\nconst searchSuccess = searchResult.code === 200 || searchResult.code === undefined;\n\nreturn {\n  json: {\n    video_upload: {\n      success: uploadSuccess,\n      message: addResult.message || 'Video processing completed',\n      data: addResult.data || addResult,\n      ingested_rounds: addResult.data?.ingested_rounds || 0,\n      file_id: addResult.data?.file_id || null\n    },\n    memory_search: {\n      success: searchSuccess,\n      message: searchResult.message || 'Search completed',\n      response: searchResult.data?.response || searchResult.response || 'No related memory found',\n      timestamp: searchResult.data?.timestamp || null\n    },\n    summary: {\n      video_processed: uploadSuccess ? 'Success' : 'Failed',\n      memory_found: searchSuccess && (searchResult.data?.response || searchResult.response) ? 'Yes' : 'No',\n      answer: searchResult.data?.response || searchResult.response || 'No related memory found',\n      chunks_ingested: addResult.data?.ingested_rounds || 0\n    }\n  }\n};"
             },
             "id": "format_output",
-            "name": "格式化输出",
+            "name": "Format Output",
             "type": "n8n-nodes-base.code",
             "typeVersion": 2,
             "position": [1050, 300]
         }
     ],
     "connections": {
-        "当点击测试时": {
-            "main": [[{"node": "设置视频路径", "type": "main", "index": 0}]]
+        "When clicking test": {
+            "main": [[{"node": "Set Video Path", "type": "main", "index": 0}]]
         },
-        "设置视频路径": {
-            "main": [[{"node": "添加视频记忆", "type": "main", "index": 0}]]
+        "Set Video Path": {
+            "main": [[{"node": "Add Video Memory", "type": "main", "index": 0}]]
         },
-        "添加视频记忆": {
-            "main": [[{"node": "搜索记忆", "type": "main", "index": 0}]]
+        "Add Video Memory": {
+            "main": [[{"node": "Search Memory", "type": "main", "index": 0}]]
         },
-        "搜索记忆": {
-            "main": [[{"node": "格式化输出", "type": "main", "index": 0}]]
+        "Search Memory": {
+            "main": [[{"node": "Format Output", "type": "main", "index": 0}]]
         }
     },
     "settings": {},
     "staticData": None
 }
 
-# 准备请求头
+# Prepare request headers
 headers = {}
 if N8N_API_KEY:
     headers["X-N8N-API-KEY"] = N8N_API_KEY
     auth = None
 else:
-    # 使用 Basic Auth
+    # Use Basic Auth
     from requests.auth import HTTPBasicAuth
     auth = HTTPBasicAuth(N8N_USER, N8N_PASS)
 
 try:
-    # 调试：显示实际使用的认证方式
+    # Debug: show actual authentication method used
     if N8N_API_KEY:
-        print(f"[调试] 使用 API Key 认证，Key 前20字符: {N8N_API_KEY[:20]}...")
-        print(f"[调试] 请求头: X-N8N-API-KEY = {N8N_API_KEY[:30]}...")
+        print(f"[DEBUG] Using API Key authentication, first 20 chars: {N8N_API_KEY[:20]}...")
+        print(f"[DEBUG] Request header: X-N8N-API-KEY = {N8N_API_KEY[:30]}...")
     else:
-        print(f"[调试] 使用 Basic Auth: {N8N_USER}/{N8N_PASS}")
+        print(f"[DEBUG] Using Basic Auth: {N8N_USER}/{N8N_PASS}")
     
     response = requests.post(
         f"{N8N_URL}/api/v1/workflows",
@@ -200,32 +230,32 @@ try:
     if response.status_code in [200, 201]:
         workflow = response.json()
         workflow_id = workflow["id"]
-        print(f"[成功] 工作流已创建，ID: {workflow_id}")
+        print(f"[SUCCESS] Workflow created, ID: {workflow_id}")
     else:
-        print(f"[错误] 创建工作流失败: {response.status_code}")
+        print(f"[ERROR] Failed to create workflow: {response.status_code}")
         print(response.text)
         if response.status_code == 401:
-            print(f"\n[调试] 当前使用的 API Key: {N8N_API_KEY[:50] if N8N_API_KEY else '未配置'}...")
-            print(f"[调试] 请检查 .env 文件中的 N8N_API_KEY 是否正确")
-            print("\n提示: n8n 需要 API Key 认证")
-            print("请按以下步骤获取 API Key:")
-            print("1. 打开浏览器访问: http://localhost:5678")
-            print("2. 进入 Settings -> API")
-            print("3. 创建新的 API Key")
-            print("4. 在 .env 文件中添加: N8N_API_KEY=你的API密钥")
+            print(f"\n[DEBUG] Current API Key: {N8N_API_KEY[:50] if N8N_API_KEY else 'not configured'}...")
+            print(f"[DEBUG] Please check if N8N_API_KEY in .env file is correct")
+            print("\nTip: n8n requires API Key authentication")
+            print("Please follow these steps to get API Key:")
+            print("1. Open browser and visit: http://localhost:5678")
+            print("2. Go to Settings -> API")
+            print("3. Create a new API Key")
+            print("4. Add to .env file: N8N_API_KEY=your_api_key")
         exit(1)
 except Exception as e:
-    print(f"[错误] 创建失败: {e}")
+    print(f"[ERROR] Creation failed: {e}")
     exit(1)
 
-# 2. 等待工作流就绪
-print("\n[2/4] 等待工作流就绪...")
+# 2. Wait for workflow to be ready
+print("\n[2/4] Waiting for workflow to be ready...")
 time.sleep(2)
 
-# 3. 激活工作流
-print("[3/4] 激活工作流...")
+# 3. Activate workflow
+print("[3/4] Activating workflow...")
 try:
-    # n8n 激活工作流需要发送 active: true
+    # n8n requires active: true to activate workflow
     response = requests.post(
         f"{N8N_URL}/api/v1/workflows/{workflow_id}/activate",
         json={"active": True},
@@ -234,27 +264,30 @@ try:
         timeout=10
     )
     if response.status_code in [200, 204]:
-        print("[成功] 工作流已激活")
+        print("[SUCCESS] Workflow activated")
     else:
-        print(f"[警告] 激活失败: {response.status_code}")
-        print(f"响应: {response.text}")
-        print("提示: 可以在 n8n UI 中手动激活工作流")
+        print(f"[WARNING] Activation failed: {response.status_code}")
+        print(f"Response: {response.text}")
+        print("Tip: You can manually activate the workflow in n8n UI")
 except Exception as e:
-    print(f"[警告] 激活失败: {e}")
-    print("提示: 可以在 n8n UI 中手动激活工作流")
+    print(f"[WARNING] Activation failed: {e}")
+    print("Tip: You can manually activate the workflow in n8n UI")
 
 print("\n" + "=" * 60)
-print("工作流创建完成！")
+print("Workflow creation completed!")
 print("=" * 60)
-print(f"\n工作流 URL: {N8N_URL}/workflow/{workflow_id}")
-print(f"\n使用说明:")
-print("1. 在浏览器中打开上面的 URL")
-print("2. 点击 '设置视频路径' 节点，修改代码中的视频路径")
-print("   或者在工作流执行时，在输入数据中添加 video_path 字段")
-print("3. 点击 '当点击测试时' 节点，然后点击 'Execute Workflow' 执行")
-print("4. 查看 '格式化输出' 节点的结果")
-print("\n提示:")
-print("- 视频路径格式: D:\\\\project\\\\memcontext-memcontext\\\\test_video.mp4")
-print("- 或者使用正斜杠: D:/project/memcontext-memcontext/test_video.mp4")
-print("- 如果路径包含空格，不需要加引号，n8n 会自动处理")
+print(f"\nWorkflow URL: {N8N_URL}/workflow/{workflow_id}")
+print(f"\nUsage instructions:")
+print("1. Open the URL above in your browser")
+print("2. Click 'Set Video Path' node to modify the video path in code")
+print("   Or add video_path field to input data when executing workflow")
+print("3. Click 'When clicking test' node, then click 'Execute Workflow' to run")
+print("4. Check the results in 'Format Output' node")
+print("\nTips:")
+print(f"- Default video path: {DEFAULT_VIDEO_PATH}")
+print(f"- Project root: {PROJECT_ROOT}")
+print("- Video path format example (Windows): D:\\\\project\\\\memcontext-memcontext\\\\memcontext-n8n\\\\test1.mp4")
+print("- Or use forward slashes: D:/project/memcontext-memcontext/memcontext-n8n/test1.mp4")
+print("- If path contains spaces, no quotes needed, n8n will handle it automatically")
+print("- You can specify other video paths via video_path field in input data when executing workflow")
 
