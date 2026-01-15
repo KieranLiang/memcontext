@@ -212,3 +212,14 @@ users/
 assistants/
 temp_memory/
 files/
+
+
+# Claude Code
+.claude/
+tmpclaude*
+
+# test video
+memcontext-n8n/memcontext-n8n/test1.mp4
+
+# Coze job store
+memcontext-coze/runtime/job_store/
