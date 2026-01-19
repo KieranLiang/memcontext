@@ -1,6 +1,6 @@
 # Memcontext MCP 服务器部署指南
 
-Memcontext MCP 服务器是一个基于 Model Context Protocol (MCP) 的智能记忆系统，为 Cursor 和 Claude Desktop 等编辑器提供记忆管理功能。
+Memcontext MCP 服务器是一个基于 Model Context Protocol (MCP) 的智能记忆系统，为 Cursor、Claude Desktop、Claude Code CLI 和 OpenCode 等编辑器提供记忆管理功能。
 
 ## ⚡ 快速开始
 
@@ -17,7 +17,9 @@ Memcontext MCP 服务器是一个基于 Model Context Protocol (MCP) 的智能�
 
 3. **部署到编辑器**：
    - **Cursor**: 运行 `python setup_cursor.py`
-   - **Claude Desktop和Claude Code CLI**: 运行 `python setup_claude_desktop.py`
+   - **Claude Desktop**: 运行 `python setup_claude_desktop.py`
+   - **Claude Code CLI**: 运行 `python setup_claude_code.py`
+   - **OpenCode**: 运行 `python setup_opencode.py`
 
 4. **重启编辑器并开始使用**：
    - 重启后，AI 助手会自动使用记忆系统
@@ -184,27 +186,107 @@ python setup_claude_desktop.py
 
 ### 部署到 Claude Code CLI
 
+**重要说明**：Claude Code CLI 和 Claude Desktop 使用**不同的配置文件**：
+- Claude Desktop 使用：`%APPDATA%\Claude\claude_desktop_config.json`（Windows）
+- Claude Code CLI 使用：`~/.claude.json`，且 MCP 配置是**按项目存储**的
+
+因此，配置 `claude_desktop_config.json` **不会影响** Claude Code CLI。必须使用专门的配置脚本。
+
 1. **运行配置脚本**：
- 
+
 ```bash
-python setup_claude_desktop.py
+python setup_claude_code.py
 ```
 
-脚本会自动：
-- 检测操作系统类型
-- 找到 Claude Code CLI 配置文件位置
-- 备份现有配置
-- 更新配置文件
+脚本会：
+- 检测 Claude Code CLI 是否已安装
+- 检测 Python 解释器路径
+- **交互式询问配置范围 (scope)**：
+  - `local` - 仅当前项目可用
+  - `project` - 项目共享
+  - `user` - 用户全局可用（跨所有项目，存储在 ~/.claude.json）
+- 使用 `claude mcp add` 命令添加 MCP 服务器
 
-2. **重启 Claude Code CLI**：
-   - 完全关闭 Claude Code CLI
-   - 重新启动
-
-3. **验证安装**：
-   在 Claude Code CLI 中询问：
+2. **验证安装**：
+   在 Claude Code CLI 中使用：
+   ```
+   claude mcp list
+   ```
+   或者直接在对话中询问：
    ```
    请列出所有可用的 MCP 工具
    ```
+   如果能看到 `add_memory`、`retrieve_memory`、`get_user_profile` 工具，说明配置成功。
+
+3. **测试 MCP 工具**：
+   在 Claude Code 中测试：
+   ```
+   请使用 Memcontext 添加一条记忆：我在 Claude Code 中使用 Python
+   ```
+
+**注意**：
+- 如果选择 `local` scope，配置仅对当前项目有效
+- 如果选择 `project` scope，配置存储在项目根目录的 `.mcp.json` 文件中，项目成员可以共享
+- 如果选择 `user` scope，配置对所有项目都有效
+- 使用 `claude mcp list` 查看所有配置的服务器
+- 使用 `claude mcp remove memcontext -s <scope>` 移除指定 scope 的服务器
+
+### 部署到 OpenCode
+
+OpenCode 是通过 npm 全局安装的编辑器。配置步骤：
+
+1. **确保 OpenCode 已安装**：
+   ```bash
+   npm install -g opencode-ai
+   ```
+
+2. **运行配置脚本**：
+   ```bash
+   python setup_opencode.py
+   ```
+
+   脚本会自动：
+   - 检测 OpenCode 是否通过 npm 全局安装
+   - 自动查找或创建配置文件（**始终使用标准位置**）：
+     - **Windows**: `C:\Users\<用户名>\.config\opencode\opencode.json`
+     - **macOS/Linux**: `~/.config/opencode/opencode.json`
+   - 备份现有配置（如果存在）
+   - 更新或创建 MCP 服务器配置
+
+3. **重启 OpenCode**：
+   - 完全关闭 OpenCode（不是最小化或重新加载窗口）
+   - 重新启动 OpenCode
+
+4. **验证安装**：
+   在 OpenCode 的 AI 聊天中询问：
+   ```
+   请列出所有可用的 MCP 工具
+   ```
+   如果能看到以下工具，说明配置成功：
+   - `add_memory` - 添加记忆
+   - `retrieve_memory` - 检索记忆
+   - `get_user_profile` - 获取用户画像
+   - `update_user_profile` - 更新用户画像
+   - `add_user_knowledge` - 添加用户知识
+
+**重要提示**：
+- OpenCode 配置文件名称是 `opencode.json`（**不带点**，不是 `.opencode.json`）
+- **配置文件标准位置**（脚本会始终写入此位置）：
+  - **Windows**: `C:\Users\<用户名>\.config\opencode\opencode.json`
+  - **macOS/Linux**: `~/.config/opencode/opencode.json`
+- 如果脚本发现旧位置的配置文件（如用户目录下的 `opencode.json`），会提示您，但仍会在标准位置创建新配置
+- 建议将旧配置迁移到标准位置
+- OpenCode 支持全局配置和项目级配置
+- 项目级配置文件位于项目根目录（`opencode.json` 或 `opencode.jsonc`）
+- 项目级配置会覆盖全局配置
+
+**故障排除**：
+- 如果 OpenCode 无法识别 MCP 工具，请检查：
+  1. 配置文件位置是否正确（标准位置：`.config/opencode/opencode.json`）
+  2. 配置文件名称是否正确（`opencode.json`，不带点）
+  3. 配置文件格式是否正确（`command` 必须是数组）
+  4. 是否完全重启了 OpenCode（不是重新加载）
+  5. 查看 OpenCode 的日志文件查找错误信息
 
 ## 💻 使用方法
 
@@ -308,7 +390,7 @@ AI: [调用 get_user_profile] 根据您的记忆，您是一位 Python 开发者
    - 将 `SKILL.md` 的内容添加到 Claude Desktop 的系统提示词中
    - 或者作为对话上下文引用
 
-3. **在 Claude Code 中使用**：
+3. **在 Claude Code CLI中使用**：
    - **方法一（推荐）**：手动复制到技能目录
      
      将 `skills/memory_manager` 目录复制到 Claude Code 的技能目录：
@@ -331,9 +413,30 @@ AI: [调用 get_user_profile] 根据您的记忆，您是一位 Python 开发者
      @skills/memory_manager/SKILL.md 请按照这个技能定义来工作
      ```
      
-   > **注意**：确保技能目录结构正确，`SKILL.md` 文件必须在 `memory_manager` 子目录中，而不是直接在 `skills` 目录下。
+   > **注意**：技能目录位于 `%USERPROFILE%\.claude`（Windows）或 `~/.claude`（macOS/Linux），`SKILL.md` 文件必须在 `memory_manager` 子目录中。
 
-4. **工作流程**：
+4. **在 OpenCode 中使用**：
+   
+   **推荐方式**：将 `SKILL.md` 放在 OpenCode 的 skill 目录下 memory_manager目录中
+   - `opencode.json` 位置：`C:\Users\<用户名>\.config\opencode\opencode.json`
+   - `SKILL.md` 位置：`C:\Users\<用户名>\.config\opencode\skill\memory_manager\SKILL.md`（Windows）
+   - 或 `~/.config/opencode/skill/memory_manager/SKILL.md`（macOS/Linux）
+   
+   **其他方式**：
+   - 如果 `SKILL.md` 在项目目录中，直接 `@SKILL.md` 即可
+   - 如果 `SKILL.md` 在其他位置，使用完整路径：`@d:/Users/memcontext-dev/memcontext-mcp/SKILL.md`
+   - 在 OpenCode 的 AI 聊天中直接引用：
+     ```
+     @SKILL.md 请按照这个技能定义来工作
+     ```
+   
+   **说明**：
+   - `opencode.json` 配置文件位于标准位置（Windows: `C:\Users\<用户名>\.config\opencode\opencode.json`）
+   - OpenCode 会自动读取全局配置文件，**不需要在对话中引用**
+   - 只需要引用 `SKILL.md` 文件即可启用自动记忆管理
+   - 将 `SKILL.md` 放在 `.config/opencode/skill/memory_manager/` 目录下，便于统一管理，且 OpenCode 可以轻松访问
+
+5. **工作流程**：
    Skill 定义了 "查-回-存" 三步法：
    - **Step 1**: 自动检索相关记忆
    - **Step 2**: 结合记忆生成回答
@@ -496,6 +599,35 @@ python server_new.py --config config.json
 ```
 
 > 💡 **提示**: 上述路径为示例，实际使用时配置脚本会自动检测并设置正确的路径。
+
+**OpenCode** (Windows: `C:\Users\<用户名>\.config\opencode\opencode.json`, macOS/Linux: `~/.config/opencode/opencode.json`):
+```json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "memcontext": {
+      "type": "local",
+      "command": [
+        "D:/anaconda3/python.exe",
+        "D:/file/memcontext-dev/memcontext-mcp/server_new.py",
+        "--config",
+        "D:/file/memcontext-dev/memcontext-mcp/config.json"
+      ],
+      "enabled": true
+    }
+  }
+}
+```
+
+> 💡 **提示**: 
+> - 上述路径为示例，实际使用时运行 `python setup_opencode.py` 会自动检测并设置正确的路径
+> - 配置文件名称必须是 `opencode.json`（**不带点**），不是 `.opencode.json`
+> - **配置文件标准位置**（脚本会始终写入此位置）：
+>   - Windows: `C:\Users\<用户名>\.config\opencode\opencode.json`
+>   - macOS/Linux: `~/.config/opencode/opencode.json`
+> - 如果发现旧位置的配置文件，脚本会提示，但仍会在标准位置创建新配置
+> - OpenCode 也支持在项目根目录创建 `opencode.json` 进行项目级配置
+> - 项目级配置会覆盖全局配置
 
 ## 🔄 更新配置
 
